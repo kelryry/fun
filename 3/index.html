@@ -96,10 +96,8 @@
     
     <div class="fixed inset-0 bg-black/90 backdrop-blur-[2px] z-0"></div>
 
-    <!-- GAME CONTAINER -->
     <div id="game-container" class="relative z-10 w-full max-w-md glass-panel rounded-3xl overflow-hidden flex flex-col shadow-2xl min-h-[800px] transition-opacity duration-500 hidden border-t border-white/10">
         
-        <!-- Header -->
         <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50">
             <div>
                 <h1 class="text-xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-rose-400">
@@ -115,9 +113,7 @@
             </div>
         </div>
 
-        <!-- Stats Area -->
         <div class="px-6 py-4 bg-slate-900/30 space-y-3">
-            <!-- Frustration -->
             <div>
                 <div class="flex justify-between text-xs font-bold mb-1 uppercase tracking-wider">
                     <span class="text-rose-400 flex items-center gap-1">🔥 生理压抑 (Urge)</span>
@@ -128,7 +124,6 @@
                 </div>
             </div>
 
-            <!-- Anxiety -->
             <div>
                 <div class="flex justify-between text-xs font-bold mb-1 uppercase tracking-wider">
                     <span class="text-violet-400 flex items-center gap-1">🧠 心理压力 (Anxiety)</span>
@@ -140,7 +135,6 @@
                 <p id="panic-warning" class="hidden text-[10px] text-violet-300 mt-1 text-center animate-pulse">⚠️ 恐慌状态：视线模糊，无法看清细节</p>
             </div>
 
-            <!-- Tools & Hospital -->
             <div class="flex gap-2 pt-1">
                 <div class="flex-1 bg-slate-800/50 rounded-lg p-2 border border-white/5 flex items-center justify-between group relative">
                     <div class="flex flex-col">
@@ -162,10 +156,8 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <div id="game-content" class="flex-1 p-6 flex flex-col overflow-y-auto relative">
             
-            <!-- Partner Profile -->
             <div class="text-center mb-4 relative">
                 <div class="w-20 h-20 mx-auto bg-gradient-to-br from-slate-700 to-slate-800 rounded-full flex items-center justify-center text-4xl shadow-xl border-2 border-slate-600 avatar-float mb-3 relative">
                     <span id="avatar-emoji">🌚</span>
@@ -175,12 +167,9 @@
                 <p id="flirt-text" class="text-[11px] text-pink-300/90 italic mt-2 font-serif tracking-wide">"..."</p>
             </div>
 
-            <!-- Tags Grid -->
             <div id="tags-container" class="flex flex-wrap justify-center gap-2 mb-6 content-start min-h-[60px]">
-                <!-- Injected via JS -->
-            </div>
+                </div>
 
-            <!-- Interaction Buttons -->
             <div class="space-y-2 mt-auto">
                 
                 <button id="btn-chat" onclick="takeAction('chat')" class="w-full py-3 bg-indigo-900/40 hover:bg-indigo-800/60 text-indigo-200 rounded-xl font-bold border border-indigo-500/20 transition-all flex items-center justify-center gap-2 text-sm">
@@ -215,7 +204,6 @@
         </div>
     </div>
 
-    <!-- START SCREEN -->
     <div id="intro-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-xl transition-opacity duration-500">
         <div class="bg-slate-900 p-8 rounded-3xl max-w-sm w-full border border-white/10 shadow-2xl text-center relative">
             
@@ -242,16 +230,13 @@
         </div>
     </div>
 
-    <!-- HELP MODAL -->
     <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden" onclick="toggleHelp()">
         <div class="bg-slate-900 w-full max-w-md h-[85vh] rounded-3xl border border-white/10 shadow-2xl flex flex-col relative overflow-hidden" onclick="event.stopPropagation()">
-            <!-- Header -->
             <div class="p-6 border-b border-white/5 bg-slate-800/50 flex justify-between items-center">
                 <h2 class="text-xl font-bold text-white">游戏指南手册</h2>
                 <button onclick="toggleHelp()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
             </div>
             
-            <!-- Content -->
             <div class="p-6 overflow-y-auto custom-scroll text-sm text-slate-300 space-y-6">
                 
                 <section>
@@ -301,14 +286,12 @@
                 </section>
             </div>
             
-            <!-- Footer -->
             <div class="p-4 border-t border-white/5 bg-slate-900 text-center">
                 <button onclick="toggleHelp()" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition-colors">知道了</button>
             </div>
         </div>
     </div>
 
-    <!-- FEEDBACK / GAME OVER / WIN MODAL -->
     <div id="feedback-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-md hidden">
         <div class="bg-slate-900 w-full max-w-md max-h-[90vh] rounded-3xl border border-white/10 shadow-2xl relative flex flex-col overflow-hidden">
             
@@ -322,18 +305,15 @@
                     <p id="feedback-message"></p>
                 </div>
                 
-                <!-- Medical Report -->
                 <div id="disease-report" class="hidden mt-4 bg-rose-950/30 border border-rose-500/30 rounded-xl p-4">
                     <p id="disease-content" class="text-xs text-rose-100/80 space-y-2"></p>
                 </div>
             </div>
 
-            <!-- History List (Review) -->
             <div id="history-container" class="flex-1 overflow-y-auto px-6 py-2 custom-scroll hidden">
                 <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 text-center border-b border-white/5 pb-2">约会记录复盘</h3>
                 <div id="history-list" class="space-y-3 text-xs">
-                    <!-- History items injected here -->
-                </div>
+                    </div>
             </div>
 
             <div class="p-6 pt-4 flex gap-3 flex-shrink-0">
@@ -353,7 +333,7 @@
             startFrustration: 50,
             passiveGain: 8,        
             anxietyGainPassive: 2, 
-            refuseCost: 0, // Changed: 4 passive + 4 penalty = 8 total gain per refusal
+            refuseCost: 0, 
             chatCost: 3,
             hospitalCost: 10,      
             
@@ -412,7 +392,6 @@
         ];
 
         const ALL_TAGS = [
-            // Same tag list as before
            { text: "手掌/脚底有红斑", color: "bg-red-700", risk: { SYPHILIS: 0.95 }, clue: "如果你看到这个，跑！这是梅毒二期的典型铁证。", hiddenChance: 0.8 },
             { text: "私处长了个硬硬的红疮", color: "bg-red-700", risk: { SYPHILIS: 0.98 }, clue: "这就叫『硬下疳』。不痛不痒，但那是梅毒一期。", hiddenChance: 0.9 },
             { text: "嘴角/下面长了一簇水泡", color: "bg-red-700", risk: { HERPES: 0.9 }, clue: "疱疹正在发作，水泡液里全是病毒，碰一下就中招。", hiddenChance: 0.9 },
@@ -486,8 +465,8 @@
             { text: "处女座/重度洁癖", color: "bg-sky-700", risk: {}, safeChance: 0.8, clue: "进门先洗半小时澡，甚至要求你也洗两遍。安全感满满。", hiddenChance: 0 },
             { text: "定期献血者", color: "bg-emerald-700", risk: {}, safeChance: 0.9, clue: "血站会进行严格的核酸检测，能献血说明血液大概率干净。", hiddenChance: 0.4 },
             { text: "当面拆封阴性检测单", color: "bg-emerald-700", risk: {}, safeChance: 0.95, clue: "目前最可靠的凭证（注意看日期是不是最近的）。", hiddenChance: 0.5 },
-            { text: "包里自备各种安全套", color: "bg-sky-700", risk: {}, safetyBonus: true, clue: "安全意识极强，大概率对自己和他人都负责。", hiddenChance: 0.3 },
-            { text: "明确拒绝无套提议", color: "bg-sky-700", risk: {}, safetyBonus: true, clue: "有原则的人通常比较安全。", hiddenChance: 0 },
+            { text: "包里自备各种安全套", color: "bg-sky-700", risk: {}, safetyBonus: true, constraint: "condom_only", clue: "安全意识极强，大概率对自己和他人都负责。", hiddenChance: 0.3 },
+            { text: "明确拒绝无套提议", color: "bg-sky-700", risk: {}, safetyBonus: true, constraint: "condom_only", clue: "有原则的人通常比较安全。", hiddenChance: 0 },
             { text: "马拉松/铁三运动员", color: "bg-emerald-600", risk: {}, safeChance: 0.7, clue: "生活极度自律，身体素质好，免疫力强。", hiddenChance: 0 },
 
             // ============================================================
@@ -682,6 +661,9 @@
                 if (c === 'no_condom') {
                     disableBtn('btn-oral-condom');
                     disableBtn('btn-sex-condom');
+                } else if (c === 'condom_only') {
+                    disableBtn('btn-oral-raw');
+                    disableBtn('btn-sex-raw');
                 } else if (c === 'no_oral') {
                     disableBtn('btn-oral-condom');
                     disableBtn('btn-oral-raw');
@@ -924,6 +906,50 @@
 
         // --- UI HELPERS ---
 
+        function getStatsHTML() {
+            let counts = { enjoy: 0, escape: 0, leave: 0, miss: 0, infected: 0 };
+
+            STATE.history.forEach(h => {
+                if (h.outcomeLabel.includes("理智享受")) counts.enjoy++;
+                if (h.outcomeLabel.includes("死里逃生")) counts.escape++;
+                if (h.outcomeLabel.includes("正确离开")) counts.leave++;
+                if (h.outcomeLabel.includes("遗憾错过")) counts.miss++;
+                if (h.outcomeLabel.includes("被ta感染")) counts.infected++;
+            });
+
+            return `
+                <div class="mt-4 bg-slate-950/50 rounded-xl p-3 border border-white/5 text-xs">
+                    <h4 class="text-slate-500 font-bold uppercase tracking-widest mb-2 text-center text-[10px]">生涯统计</h4>
+                    <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+                        <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                            <span class="text-blue-300">✅ 理智享受</span>
+                            <span class="font-mono font-bold text-white text-sm">${counts.enjoy}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                            <span class="text-emerald-300">🛡️ 正确离开</span>
+                            <span class="font-mono font-bold text-white text-sm">${counts.leave}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                            <span class="text-amber-300">😰 死里逃生</span>
+                            <span class="font-mono font-bold text-white text-sm">${counts.escape}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                            <span class="text-slate-400">👋 遗憾错过</span>
+                            <span class="font-mono font-bold text-white text-sm">${counts.miss}</span>
+                        </div>
+                        <div class="col-span-2 flex justify-between items-center border-b border-white/5 pb-1 bg-rose-950/20 px-1 -mx-1 rounded">
+                            <span class="text-rose-400 font-bold">💀 被感染次数</span>
+                            <span class="font-mono font-black text-rose-400 text-sm">${counts.infected}</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-white/10 flex justify-between items-center">
+                        <span class="font-bold text-slate-300">⏱️ 存活回合</span>
+                        <span class="font-mono font-black text-xl text-white">${STATE.turn - 2}</span>
+                    </div>
+                </div>
+            `;
+        }
+
         function showFeedback(title, msg, icon, isSimpleAlert = false) {
             const el = document.getElementById('feedback-overlay');
             el.classList.remove('hidden');
@@ -962,7 +988,9 @@
             titleEl.innerText = title;
             titleEl.className = "text-3xl font-black text-rose-500 uppercase tracking-tighter animate-pulse";
             document.getElementById('feedback-icon').innerText = icon;
-            document.getElementById('feedback-message').innerHTML = msg;
+            
+            // Append Stats
+            document.getElementById('feedback-message').innerHTML = msg + getStatsHTML();
 
             if (disease) {
                 const report = document.getElementById('disease-report');
@@ -990,8 +1018,10 @@
             titleEl.innerText = "幸存者";
             titleEl.className = "text-3xl font-black text-emerald-400 uppercase tracking-tighter";
             document.getElementById('feedback-icon').innerText = "✨";
+            
+            // Append Stats
             document.getElementById('feedback-message').innerHTML = 
-                `你成功清零了压抑值，且身体健康。<br><br>在这场充满迷雾和风险的游戏中，你靠着谨慎、策略和一点运气活了下来。<br>总回合数: ${STATE.turn}`;
+                `你成功清零了压抑值，且身体健康。<br><br>在这场充满迷雾和风险的游戏中，你靠着谨慎、策略和一点运气活了下来。` + getStatsHTML();
 
             document.getElementById('disease-report').classList.add('hidden');
 
