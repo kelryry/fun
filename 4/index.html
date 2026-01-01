@@ -109,18 +109,42 @@
         </div>
 
         <div class="control-group">
-            <!-- 增加 Max 到 60000 -->
+            <label>计算采样率 (性能优化) <span id="sample-val" class="val-display">1/1 (精准)</span></label>
+            <input type="range" id="sample-slider" min="1" max="16" value="1" step="1">
+            <div class="help-box">
+                <b>解决卡顿的神器。</b><br>
+                • <b>1/1</b>: 计算所有粒子 (慢，精准)。<br>
+                • <b>1/4</b>: 只计算 25% 的粒子，性能翻 4 倍 (适合 4万+ 粒子)。<br>
+                • <b>1/8</b>: 极速模式，适合 10万 粒子。
+            </div>
+        </div>
+
+        <!-- 新增：感知半径滑块 -->
+        <div class="control-group">
+            <label>感知半径 (视野) <span id="radius-val" class="val-display">80px</span></label>
+            <input type="range" id="radius-slider" min="20" max="200" value="80" step="1">
+            <div class="help-box">
+                决定粒子能“看到”多远的邻居。<br>
+                • <b>小半径</b>: 形成细碎、紧密的结构。<br>
+                • <b>大半径</b>: 形成巨大的宏观结构，计算量略增。
+            </div>
+        </div>
+
+        <div class="control-group">
             <label>粒子数量 <span id="count-val" class="val-display">16000</span></label>
             <input type="range" id="atom-slider" min="1000" max="60000" value="16000" step="1000">
             <div class="help-box">
                 <b>2D 数据架构</b> 已启用，突破 16k 限制。<br>
-                警告: 40,000 粒子产生 16 亿次运算/帧，请留意显卡负载。
+                如果卡顿，请降低“计算采样率”。
             </div>
         </div>
 
         <div class="control-group">
             <label>物种多样性 <span id="type-val" class="val-display">6</span></label>
             <input type="range" id="type-slider" min="2" max="8" value="6" step="1">
+            <div class="help-box">
+                宇宙中的元素种类数量。种类越多，形成的结构越混乱复杂。
+            </div>
         </div>
 
         <div class="control-group">
@@ -192,8 +216,6 @@
 
         uniform sampler2D u_texPos;
         uniform sampler2D u_texVel;
-        
-        // 关键更新：传入数据纹理的宽度，用于 2D 索引映射
         uniform int u_texWidth; 
         
         uniform int u_count;
@@ -203,20 +225,22 @@
         uniform float u_worldSizeX;
         uniform float u_worldSizeY;
         
+        // 关键更新：使用 Uniform 传入半径，不再是 Const
+        uniform float u_smoothRadius;
+        
+        uniform int u_sampleStep;
+        uniform int u_frame;
+        
         uniform float u_rules[64]; 
         uniform int u_numTypes;
 
-        const float R_smooth = 80.0;
         const float R_repel = 10.0;
 
         layout(location = 0) out vec4 outPos;
         layout(location = 1) out vec4 outVel;
 
         void main() {
-            // 当前像素坐标 (x, y)
             ivec2 fragCoord = ivec2(gl_FragCoord.xy);
-            
-            // 将 2D 坐标转换为线性索引
             int index = fragCoord.y * u_texWidth + fragCoord.x;
             
             if (index >= u_count) discard;
@@ -230,12 +254,11 @@
             
             vec2 force = vec2(0.0);
 
-            // 遍历所有粒子 (N^2)
-            // 需要将线性索引 i 转换回 2D 纹理坐标
-            for (int i = 0; i < u_count; i++) {
+            int startIdx = u_frame % u_sampleStep;
+
+            for (int i = startIdx; i < u_count; i += u_sampleStep) {
                 if (i == index) continue;
 
-                // 2D 映射逻辑
                 ivec2 otherCoord = ivec2(i % u_texWidth, i / u_texWidth);
                 
                 vec4 otherPosData = texelFetch(u_texPos, otherCoord, 0);
@@ -251,7 +274,8 @@
 
                 float distSq = dot(d, d);
 
-                if (distSq > 0.0 && distSq < R_smooth * R_smooth) {
+                // 使用 u_smoothRadius
+                if (distSq > 0.0 && distSq < u_smoothRadius * u_smoothRadius) {
                     float dist = sqrt(distSq);
                     float f = 0.0;
 
@@ -259,13 +283,16 @@
                         f = -2.0 * (1.0 - dist / R_repel);
                     } else {
                         float g = u_rules[type * u_numTypes + otherType];
-                        float distFactor = (dist - R_repel) / (R_smooth - R_repel);
+                        // 距离因子根据 u_smoothRadius 动态计算
+                        float distFactor = (dist - R_repel) / (u_smoothRadius - R_repel);
                         f = g * (1.0 - abs(2.0 * distFactor - 1.0));
                     }
                     
                     force += (d / dist) * f;
                 }
             }
+
+            force *= float(u_sampleStep);
 
             float adjustedFriction = pow(u_friction, u_dt);
             vel = vel * adjustedFriction + force * 0.5 * u_dt;
@@ -286,14 +313,13 @@
         uniform sampler2D u_texPos;
         uniform vec2 u_resolution;
         uniform vec3 u_colors[8]; 
-        uniform int u_texWidth; // 需传入宽度以计算读取位置
+        uniform int u_texWidth; 
 
         out vec3 v_color;
 
         void main() {
             int id = gl_VertexID;
             
-            // VertexID 转 2D 纹理坐标
             ivec2 coord = ivec2(id % u_texWidth, id / u_texWidth);
             
             vec4 posData = texelFetch(u_texPos, coord, 0);
@@ -340,14 +366,10 @@
             throw new Error("Missing EXT_color_buffer_float");
         }
 
-        // --- 核心改动：固定数据纹理宽度 ---
-        // 使用 512x512 的纹理，理论上限 262,144 粒子
-        // 这足以覆盖我们想要运行的范围
         const DATA_WIDTH = 512;
         const DATA_HEIGHT = 512;
         const MAX_CAPACITY = DATA_WIDTH * DATA_HEIGHT; 
 
-        // 硬件检测
         function detectGPU() {
             const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
             if (debugInfo) {
@@ -360,8 +382,7 @@
         }
         const defaultParticles = detectGPU();
         
-        // --- 参数 ---
-        let numParticles = Math.min(defaultParticles, 60000); // UI 软限制
+        let numParticles = Math.min(defaultParticles, 60000); 
         let numTypes = 6;
         let rules = new Float32Array(64); 
         let colors = [];
@@ -372,18 +393,19 @@
             friction: 0.75,
             drift: 0.02,
             width: window.innerWidth,
-            height: window.innerHeight
+            height: window.innerHeight,
+            sampleStep: 1,
+            smoothRadius: 80.0 // 新增：默认半径
         };
         
         let isPaused = false;
         let timeAccumulator = 0; 
+        let frameCount = 0; 
 
-        // --- UI ---
-        document.getElementById('atom-slider').max = 60000; // 软限制在6万，防止N^2爆炸
+        document.getElementById('atom-slider').max = 60000; 
         document.getElementById('atom-slider').value = numParticles;
         document.getElementById('count-val').innerText = numParticles;
 
-        // --- Shader ---
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
             gl.shaderSource(shader, source.trim()); 
@@ -417,14 +439,12 @@
             document.getElementById('fs-render').text
         );
 
-        // --- Textures (2D) ---
         let textures = []; 
         let readIdx = 0;
 
         function createDataTexture() {
             const tex = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, tex);
-            // 关键：创建 DATA_WIDTH x DATA_HEIGHT 的 2D 纹理
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, DATA_WIDTH, DATA_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -448,7 +468,6 @@
         }
         initTextures();
 
-        // --- Logic ---
         function resetParticles() {
             const posData = new Float32Array(MAX_CAPACITY * 4);
             const velData = new Float32Array(MAX_CAPACITY * 4);
@@ -459,7 +478,6 @@
                 velData[i*4 + 0] = 0;
                 velData[i*4 + 1] = 0;
             }
-            // 数据上传到 2D 纹理
             for (let i = 0; i < 2; i++) {
                 gl.bindTexture(gl.TEXTURE_2D, textures[i].pos);
                 gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, DATA_WIDTH, DATA_HEIGHT, gl.RGBA, gl.FLOAT, posData);
@@ -625,7 +643,6 @@
 
             gl.useProgram(physicsProgram);
             gl.bindFramebuffer(gl.FRAMEBUFFER, writeTex.fb);
-            // 视口必须设置为 2D 纹理的完整尺寸
             gl.viewport(0, 0, DATA_WIDTH, DATA_HEIGHT);
 
             gl.activeTexture(gl.TEXTURE0);
@@ -636,12 +653,18 @@
             gl.bindTexture(gl.TEXTURE_2D, readTex.vel);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texVel"), 1);
 
-            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texWidth"), DATA_WIDTH); // 传入宽度
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texWidth"), DATA_WIDTH); 
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_count"), numParticles);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_dt"), FIXED_DT); 
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_friction"), params.friction);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeX"), params.width);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeY"), params.height);
+            // 关键更新：传入半径
+            gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_smoothRadius"), params.smoothRadius);
+            
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_sampleStep"), params.sampleStep);
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_frame"), frameCount);
+            
             gl.uniform1fv(gl.getUniformLocation(physicsProgram, "u_rules"), rules);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_numTypes"), numTypes);
 
@@ -669,7 +692,6 @@
             gl.bindTexture(gl.TEXTURE_2D, textures[readIdx].pos);
             gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texPos"), 0);
             
-            // 同样需要宽度来计算渲染时的UV
             gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texWidth"), DATA_WIDTH); 
             gl.uniform2f(gl.getUniformLocation(renderProgram, "u_resolution"), params.width, params.height);
             gl.uniform3fv(gl.getUniformLocation(renderProgram, "u_colors"), new Float32Array(colors));
@@ -680,6 +702,7 @@
 
         function step() {
             let stepsPerFrame = 0;
+            frameCount++; 
             
             if (!isPaused) {
                 timeAccumulator += params.timeScale;
@@ -699,6 +722,22 @@
         }
 
         // --- UI ---
+        const elSample = document.getElementById('sample-val');
+        document.getElementById('sample-slider').oninput = function() {
+            params.sampleStep = parseInt(this.value);
+            let desc = " (平衡)";
+            if (params.sampleStep === 1) desc = " (精准)";
+            else if (params.sampleStep > 8) desc = " (极速)";
+            elSample.innerText = "1/" + params.sampleStep + desc;
+        };
+
+        // 半径滑块逻辑
+        const elRadius = document.getElementById('radius-val');
+        document.getElementById('radius-slider').oninput = function() {
+            params.smoothRadius = parseFloat(this.value);
+            elRadius.innerText = params.smoothRadius + "px";
+        };
+
         document.getElementById('atom-slider').oninput = function() {
             numParticles = parseInt(this.value);
             document.getElementById('count-val').innerText = numParticles;
