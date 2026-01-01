@@ -119,7 +119,6 @@
             </div>
         </div>
 
-        <!-- 新增：感知半径滑块 -->
         <div class="control-group">
             <label>感知半径 (视野) <span id="radius-val" class="val-display">80px</span></label>
             <input type="range" id="radius-slider" min="20" max="200" value="80" step="1">
@@ -140,10 +139,11 @@
         </div>
 
         <div class="control-group">
+            <!-- 上限提升至 16 -->
             <label>物种多样性 <span id="type-val" class="val-display">6</span></label>
             <input type="range" id="type-slider" min="2" max="16" value="6" step="1">
             <div class="help-box">
-                宇宙中的元素种类数量。种类越多，形成的结构越混乱复杂。
+                宇宙中的元素种类数量。现在支持最多 16 种元素，复杂度指数级上升。
             </div>
         </div>
 
@@ -224,14 +224,13 @@
         uniform float u_friction;
         uniform float u_worldSizeX;
         uniform float u_worldSizeY;
-        
-        // 关键更新：使用 Uniform 传入半径，不再是 Const
         uniform float u_smoothRadius;
         
         uniform int u_sampleStep;
         uniform int u_frame;
         
-        uniform float u_rules[64]; 
+        // 关键更新：数组扩大到 16x16 = 256
+        uniform float u_rules[256]; 
         uniform int u_numTypes;
 
         const float R_repel = 10.0;
@@ -274,7 +273,6 @@
 
                 float distSq = dot(d, d);
 
-                // 使用 u_smoothRadius
                 if (distSq > 0.0 && distSq < u_smoothRadius * u_smoothRadius) {
                     float dist = sqrt(distSq);
                     float f = 0.0;
@@ -282,8 +280,9 @@
                     if (dist < R_repel) {
                         f = -2.0 * (1.0 - dist / R_repel);
                     } else {
+                        // 索引计算：type * u_numTypes + otherType
+                        // u_rules 现在足够大 (256)，支持 max 16 types
                         float g = u_rules[type * u_numTypes + otherType];
-                        // 距离因子根据 u_smoothRadius 动态计算
                         float distFactor = (dist - R_repel) / (u_smoothRadius - R_repel);
                         f = g * (1.0 - abs(2.0 * distFactor - 1.0));
                     }
@@ -312,14 +311,14 @@
     <script id="vs-render" type="x-shader/x-vertex">#version 300 es
         uniform sampler2D u_texPos;
         uniform vec2 u_resolution;
-        uniform vec3 u_colors[8]; 
+        // 关键更新：颜色数组扩大
+        uniform vec3 u_colors[16]; 
         uniform int u_texWidth; 
 
         out vec3 v_color;
 
         void main() {
             int id = gl_VertexID;
-            
             ivec2 coord = ivec2(id % u_texWidth, id / u_texWidth);
             
             vec4 posData = texelFetch(u_texPos, coord, 0);
@@ -384,7 +383,8 @@
         
         let numParticles = Math.min(defaultParticles, 60000); 
         let numTypes = 6;
-        let rules = new Float32Array(64); 
+        // 关键更新：JS 端规则数组扩容 (16*16)
+        let rules = new Float32Array(256); 
         let colors = [];
         const FIXED_DT = 1.0; 
         
@@ -395,7 +395,7 @@
             width: window.innerWidth,
             height: window.innerHeight,
             sampleStep: 1,
-            smoothRadius: 80.0 // 新增：默认半径
+            smoothRadius: 80.0
         };
         
         let isPaused = false;
@@ -486,31 +486,47 @@
             }
         }
 
+        // 关键更新：支持任意数量颜色的生成 (HSL)
         function generateColors() {
             colors = [];
-            for (let i = 0; i < 8; i++) {
-                let h = (i / numTypes);
-                let s = 1.0, v = 1.0;
-                let r, g, b;
-                let i_h = Math.floor(h * 6);
-                let f = h * 6 - i_h;
-                let p = v * (1 - s);
-                let q = v * (1 - f * s);
-                let t = v * (1 - (1 - f) * s);
-                switch (i_h % 6) {
-                    case 0: r = v, g = t, b = p; break;
-                    case 1: r = q, g = v, b = p; break;
-                    case 2: r = p, g = v, b = t; break;
-                    case 3: r = p, g = q, b = v; break;
-                    case 4: r = t, g = p, b = v; break;
-                    case 5: r = v, g = p, b = q; break;
-                }
-                colors.push(r, g, b);
+            for (let i = 0; i < numTypes; i++) {
+                // 使用 HSL 确保色彩分布均匀
+                // H: 0-360, S: 100%, L: 60%
+                let hue = (i / numTypes) * 360;
+                let s = 1.0;
+                let l = 0.6;
+                
+                let c = (1 - Math.abs(2 * l - 1)) * s;
+                let x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+                let m = l - c / 2;
+                
+                let r = 0, g = 0, b = 0;
+                
+                if (0 <= hue && hue < 60) { r = c; g = x; b = 0; }
+                else if (60 <= hue && hue < 120) { r = x; g = c; b = 0; }
+                else if (120 <= hue && hue < 180) { r = 0; g = c; b = x; }
+                else if (180 <= hue && hue < 240) { r = 0; g = x; b = c; }
+                else if (240 <= hue && hue < 300) { r = x; g = 0; b = c; }
+                else if (300 <= hue && hue < 360) { r = c; g = 0; b = x; }
+                
+                colors.push(r + m, g + m, b + m);
+            }
+            
+            // 填充剩余空位以满足 shader 数组大小要求 (16)
+            for (let i = numTypes; i < 16; i++) {
+                colors.push(0, 0, 0);
             }
         }
 
         function randomizeRules() {
-            for (let i = 0; i < 64; i++) rules[i] = Math.random() * 2.0 - 1.0;
+            // 清空旧规则
+            rules.fill(0);
+            // 填充有效区域
+            for (let i = 0; i < numTypes; i++) {
+                for (let j = 0; j < numTypes; j++) {
+                    rules[i * numTypes + j] = Math.random() * 2.0 - 1.0;
+                }
+            }
             drawMatrix();
         }
 
@@ -519,9 +535,12 @@
             const i = Math.floor(Math.random() * numTypes);
             const j = Math.floor(Math.random() * numTypes);
             const drift = (Math.random() * 0.2 - 0.1) * (params.drift / 10.0);
-            let val = rules[i * numTypes + j] + drift;
+            
+            let idx = i * numTypes + j;
+            let val = rules[idx] + drift;
+            
             if (val > 1) val = 1; if (val < -1) val = -1;
-            rules[i * numTypes + j] = val;
+            rules[idx] = val;
             
             if (Math.random() < 0.1) drawMatrix();
         }
@@ -575,11 +594,14 @@
                     mCtx.lineWidth = 1;
                     mCtx.strokeRect(x, y, cw, ch);
                     
-                    mCtx.fillStyle = 'rgba(255,255,255,0.8)';
-                    mCtx.shadowColor = 'black';
-                    mCtx.shadowBlur = 3;
-                    mCtx.fillText(v.toFixed(1), x + cw/2, y + ch/2);
-                    mCtx.shadowBlur = 0;
+                    // 仅当格子够大时才显示数字
+                    if (cw > 20) {
+                        mCtx.fillStyle = 'rgba(255,255,255,0.8)';
+                        mCtx.shadowColor = 'black';
+                        mCtx.shadowBlur = 3;
+                        mCtx.fillText(v.toFixed(1), x + cw/2, y + ch/2);
+                        mCtx.shadowBlur = 0;
+                    }
                 }
             }
         }
@@ -659,7 +681,6 @@
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_friction"), params.friction);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeX"), params.width);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeY"), params.height);
-            // 关键更新：传入半径
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_smoothRadius"), params.smoothRadius);
             
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_sampleStep"), params.sampleStep);
@@ -694,6 +715,7 @@
             
             gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texWidth"), DATA_WIDTH); 
             gl.uniform2f(gl.getUniformLocation(renderProgram, "u_resolution"), params.width, params.height);
+            // 传入完整的颜色数组
             gl.uniform3fv(gl.getUniformLocation(renderProgram, "u_colors"), new Float32Array(colors));
 
             gl.drawArrays(gl.POINTS, 0, numParticles);
@@ -731,7 +753,6 @@
             elSample.innerText = "1/" + params.sampleStep + desc;
         };
 
-        // 半径滑块逻辑
         const elRadius = document.getElementById('radius-val');
         document.getElementById('radius-slider').oninput = function() {
             params.smoothRadius = parseFloat(this.value);
