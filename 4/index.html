@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPU 演化实验室 - 专业版</title>
+    <title>GPU 演化实验室 - 通用兼容版</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         canvas { display: block; width: 100vw; height: 100vh; }
@@ -34,12 +34,17 @@
         #ui-container::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
         /* 标题栏 */
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px; flex-direction: column; }
+        .header-top { display: flex; justify-content: space-between; width: 100%; align-items: center; }
         h1 { margin: 0; font-size: 16px; color: #00ffaa; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; }
         .gpu-badge { background: #76b900; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-left: 8px; box-shadow: 0 0 10px rgba(118, 185, 0, 0.4); }
         
         .header-btns button { background: none; border: none; color: #888; font-size: 16px; cursor: pointer; padding: 4px; transition: color 0.2s; }
         .header-btns button:hover { color: #fff; }
+
+        /* GPU 信息显示 */
+        .gpu-info { font-size: 10px; color: #666; margin-top: 5px; word-break: break-all; }
+        .gpu-info span { color: #00aaff; }
 
         /* 控件组 */
         .control-group { margin-bottom: 12px; position: relative; }
@@ -95,11 +100,14 @@
 
     <div id="ui-container">
         <div class="header">
-            <h1>GPU 演化引擎 <span class="gpu-badge">Turbo</span></h1>
-            <div class="header-btns">
-                <button id="help-btn" title="显示/隐藏说明">?</button>
-                <button id="hide-btn" title="专注模式">_</button>
+            <div class="header-top">
+                <h1>GPU 演化引擎 <span class="gpu-badge">WebGL</span></h1>
+                <div class="header-btns">
+                    <button id="help-btn" title="显示/隐藏说明">?</button>
+                    <button id="hide-btn" title="专注模式">_</button>
+                </div>
             </div>
+            <div class="gpu-info" id="gpu-name">正在检测硬件...</div>
         </div>
         
         <div class="control-group">
@@ -107,7 +115,7 @@
             <input type="range" id="speed-slider" min="0.1" max="5.0" value="1.0" step="0.1">
             <div class="help-box">
                 控制世界运行的快慢。<br>
-                <b>注意</b>: 这只改变播放速度，不会改变物理结果。高倍率下 GPU 负载会显著增加。
+                <b>注意</b>: 这只改变播放速度，不会改变物理结果。
             </div>
         </div>
 
@@ -115,7 +123,7 @@
             <label>粒子数量 <span id="count-val" class="val-display">10000</span></label>
             <input type="range" id="atom-slider" min="1000" max="20000" value="10000" step="1000">
             <div class="help-box">
-                调整宇宙中的物质总量。最大值取决于您的显卡显存。
+                调整宇宙中的物质总量。如果您的显卡较弱(如Intel集显)，建议调低至 5000 以下。
             </div>
         </div>
 
@@ -131,16 +139,13 @@
             <label>突变速率 <span id="drift-val" class="val-display">中</span></label>
             <input type="range" id="drift-slider" min="0" max="100" value="20">
             <div class="help-box">
-                物理法则 (DNA) 随机漂移的速度。设为 0 可锁定当前法则，观察稳定结构。
+                物理法则 (DNA) 随机漂移的速度。
             </div>
         </div>
 
         <div class="control-group">
             <label>介质粘度 <span id="friction-val" class="val-display">0.75</span></label>
             <input type="range" id="friction-slider" min="0.5" max="0.99" value="0.75" step="0.01">
-            <div class="help-box">
-                环境阻力。数值越低阻力越大，粒子越容易减速。
-            </div>
         </div>
 
         <div class="btn-group">
@@ -153,13 +158,12 @@
                 <span>相互作用矩阵 (点击色块修改)</span>
                 <span>红:斥 / 绿:引</span>
             </div>
-            <!-- 高分辨率画布以保证字体清晰 -->
             <canvas id="matrix-canvas" width="300" height="300"></canvas>
         </div>
         
         <div id="stats-panel">
             <div class="stat-row">
-                <span>系统温度 (平均动能)</span>
+                <span>系统温度</span>
                 <span id="stat-temp" class="stat-val">0.00</span>
             </div>
             <div class="stat-row">
@@ -177,7 +181,6 @@
         </div>
     </div>
     
-    <!-- 编辑数值弹窗 -->
     <div id="edit-modal">
         <div class="modal-card">
             <div class="modal-title" id="modal-info">修改作用力</div>
@@ -207,7 +210,6 @@
         uniform vec2 u_resolution;
         uniform int u_count;
         
-        // 注意：u_dt 现在是一个固定常数，不随滑块变化
         uniform float u_dt; 
         uniform float u_friction;
         uniform float u_worldSizeX;
@@ -246,7 +248,6 @@
 
                 vec2 d = otherPos - pos;
 
-                // 环绕世界
                 if (d.x > u_worldSizeX * 0.5) d.x -= u_worldSizeX;
                 if (d.x < -u_worldSizeX * 0.5) d.x += u_worldSizeX;
                 if (d.y > u_worldSizeY * 0.5) d.y -= u_worldSizeY;
@@ -270,15 +271,11 @@
                 }
             }
 
-            // 固定步长下的积分
-            // 摩擦力作用于当前速度，力作用于产生新速度
-            // 系数 0.5 是为了平衡力的量级，使其与CPU版手感接近
             float adjustedFriction = pow(u_friction, u_dt);
             vel = vel * adjustedFriction + force * 0.5 * u_dt;
 
             pos += vel * u_dt;
 
-            // 边界
             if (pos.x < 0.0) pos.x += u_worldSizeX;
             if (pos.x >= u_worldSizeX) pos.x -= u_worldSizeX;
             if (pos.y < 0.0) pos.y += u_worldSizeY;
@@ -330,35 +327,50 @@
     </script>
 
     <script>
-        // --- 初始化 WebGL ---
         const canvas = document.getElementById('gl-canvas');
         const gl = canvas.getContext('webgl2');
         
         if (!gl) {
-            alert("错误：不支持 WebGL 2.0。");
+            alert("错误：您的浏览器不支持 WebGL 2.0，无法启动 GPU 引擎。请尝试 Chrome 或 Edge。");
             throw new Error("WebGL2 not supported");
         }
         
         const ext = gl.getExtension("EXT_color_buffer_float");
         if (!ext) {
-            alert("错误：您的显卡不支持浮点纹理，无法运行物理引擎。");
+            alert("错误：您的显卡不支持浮点纹理运算。");
             throw new Error("Missing EXT_color_buffer_float");
         }
 
-        // 适配显卡
+        // --- 硬件检测 ---
+        function detectGPU() {
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+                const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                document.getElementById('gpu-name').innerHTML = "硬件: <span>" + renderer + "</span>";
+                
+                // 简单的性能启发式判断
+                // 如果包含 Intel, UHD, Iris 等关键词，可能性能较弱
+                const lowPerf = /intel|uhd|iris|hd graphics/i.test(renderer);
+                if (lowPerf) {
+                    return 4000; // 集成显卡限制默认粒子数
+                }
+            }
+            return 10000; // 默认
+        }
+        const defaultParticles = detectGPU();
+
         const MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
         const MAX_CAPACITY = Math.min(20000, MAX_TEXTURE_SIZE); 
         
-        // --- 参数与状态 ---
-        let numParticles = Math.min(10000, MAX_CAPACITY);
+        // --- 参数 ---
+        let numParticles = Math.min(defaultParticles, MAX_CAPACITY);
         let numTypes = 6;
         let rules = new Float32Array(64); 
         let colors = [];
-        // 固定物理步长，保证稳定性
         const FIXED_DT = 1.0; 
         
         let params = {
-            timeScale: 1.0, // 用户控制的播放速度
+            timeScale: 1.0, 
             friction: 0.75,
             drift: 0.02,
             width: window.innerWidth,
@@ -366,15 +378,14 @@
         };
         
         let isPaused = false;
-        let timeAccumulator = 0; // 时间累积器
-        let totalSpeed = 0; // 统计用
+        let timeAccumulator = 0; 
 
-        // --- UI 初始化 ---
+        // --- UI ---
         document.getElementById('atom-slider').max = MAX_CAPACITY;
         document.getElementById('atom-slider').value = numParticles;
         document.getElementById('count-val').innerText = numParticles;
 
-        // --- Shader 工具 ---
+        // --- Shader ---
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
             gl.shaderSource(shader, source.trim()); 
@@ -409,7 +420,7 @@
             document.getElementById('fs-render').text
         );
 
-        // --- 纹理管理 ---
+        // --- Textures ---
         let textures = []; 
         let readIdx = 0;
 
@@ -439,7 +450,7 @@
         }
         initTextures();
 
-        // --- 数据操作 ---
+        // --- Logic ---
         function resetParticles() {
             const posData = new Float32Array(MAX_CAPACITY * 4);
             const velData = new Float32Array(MAX_CAPACITY * 4);
@@ -490,7 +501,6 @@
             if (isPaused || params.drift === 0) return;
             const i = Math.floor(Math.random() * numTypes);
             const j = Math.floor(Math.random() * numTypes);
-            // 放大变异效果
             const drift = (Math.random() * 0.2 - 0.1) * (params.drift / 10.0);
             let val = rules[i * numTypes + j] + drift;
             if (val > 1) val = 1; if (val < -1) val = -1;
@@ -499,7 +509,6 @@
             if (Math.random() < 0.1) drawMatrix();
         }
 
-        // --- 矩阵可视化 ---
         const matrixCanvas = document.getElementById('matrix-canvas');
         const mCtx = matrixCanvas.getContext('2d');
         const editModal = document.getElementById('edit-modal');
@@ -517,24 +526,20 @@
             mCtx.fillStyle = '#111';
             mCtx.fillRect(0,0,w,h);
             
-            // 字体设置
             mCtx.font = "bold 10px monospace";
             mCtx.textAlign = "center";
             mCtx.textBaseline = "middle";
 
             for(let i=0; i<numTypes; i++) {
-                // 绘制坐标点
                 const ca = colors[i * 3 + 0] * 255;
                 const cb = colors[i * 3 + 1] * 255;
                 const cc = colors[i * 3 + 2] * 255;
                 const colorStr = `rgb(${ca},${cb},${cc})`;
                 
-                // 行头
                 mCtx.fillStyle = colorStr;
                 mCtx.beginPath();
                 mCtx.arc(padding/2, padding + i*ch + ch/2, 4, 0, Math.PI*2);
                 mCtx.fill();
-                // 列头
                 mCtx.beginPath();
                 mCtx.arc(padding + i*cw + cw/2, padding/2, 4, 0, Math.PI*2);
                 mCtx.fill();
@@ -547,14 +552,12 @@
                     const x = padding + j*cw;
                     const y = padding + i*ch;
                     
-                    // 色块
                     mCtx.fillStyle = `rgb(${r},${g},40)`;
                     mCtx.fillRect(x, y, cw, ch);
                     mCtx.strokeStyle = '#222';
                     mCtx.lineWidth = 1;
                     mCtx.strokeRect(x, y, cw, ch);
                     
-                    // 数值
                     mCtx.fillStyle = 'rgba(255,255,255,0.8)';
                     mCtx.shadowColor = 'black';
                     mCtx.shadowBlur = 3;
@@ -566,7 +569,6 @@
 
         matrixCanvas.addEventListener('click', e => {
             const rect = matrixCanvas.getBoundingClientRect();
-            // 处理 CSS 缩放
             const scaleX = matrixCanvas.width / rect.width;
             const scaleY = matrixCanvas.height / rect.height;
             const x = (e.clientX - rect.left) * scaleX;
@@ -582,12 +584,12 @@
                 editTarget = {r, c};
                 editInput.value = rules[r*numTypes+c].toFixed(2);
                 
-                // 提示文字
-                editInfo.innerHTML = `修改作用力<br><span style="font-size:11px;color:#aaa">行 ${r+1} 对 列 ${c+1}</span>`;
+                const colName1 = `粒子${r+1}`;
+                const colName2 = `粒子${c+1}`;
+                editInfo.innerHTML = `修改作用力<br><span style="font-size:11px;color:#aaa">${colName1} 对 ${colName2}</span>`;
                 
                 editModal.classList.add('active');
                 editInput.focus();
-                // 自动暂停
                 if (!isPaused) document.getElementById('pause-btn').click();
             }
         });
@@ -602,12 +604,10 @@
             drawMatrix();
         };
 
-        // --- 全屏 Quad ---
         const quadBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
 
-        // --- 主循环 ---
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -636,7 +636,6 @@
             gl.bindTexture(gl.TEXTURE_2D, readTex.vel);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texVel"), 1);
 
-            // 传入固定步长 FIXED_DT
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_count"), numParticles);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_dt"), FIXED_DT); 
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_friction"), params.friction);
@@ -650,10 +649,6 @@
             gl.enableVertexAttribArray(locPos);
             gl.vertexAttribPointer(locPos, 2, gl.FLOAT, false, 0, 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-            // 统计动能 (由于是在GPU计算，这里CPU只能读取JS模拟的数值或者回读显存)
-            // 为了性能，我们不每帧回读。这里仅作为占位，若需要真实温度需 readPixels (太慢)
-            // 所以我们暂时移除温度的实时精确计算，或仅做简单的估算
             
             readIdx = writeIdx;
         }
@@ -680,15 +675,11 @@
             gl.disable(gl.BLEND);
         }
 
-        // 核心循环
         function step() {
             let stepsPerFrame = 0;
             
             if (!isPaused) {
-                // 时间累积机制
                 timeAccumulator += params.timeScale;
-                
-                // 限制每帧最大物理步数，防止卡死
                 const MAX_STEPS = 10;
                 
                 while (timeAccumulator >= 1.0 && stepsPerFrame < MAX_STEPS) {
@@ -696,8 +687,6 @@
                     timeAccumulator -= 1.0;
                     stepsPerFrame++;
                 }
-                
-                // 如果累积太多（如切换标签页后），丢弃多余时间
                 if (timeAccumulator > 2.0) timeAccumulator = 0;
             }
 
@@ -706,7 +695,7 @@
             requestAnimationFrame(step);
         }
 
-        // --- 交互事件 ---
+        // --- UI ---
         document.getElementById('atom-slider').oninput = function() {
             numParticles = parseInt(this.value);
             document.getElementById('count-val').innerText = numParticles;
@@ -740,7 +729,6 @@
             resetParticles();
         };
 
-        // 暂停逻辑
         const btnPause = document.getElementById('pause-btn');
         const statusBar = document.getElementById('status-bar');
         const statusText = document.getElementById('status-text');
@@ -760,7 +748,6 @@
             }
         };
 
-        // UI 显隐
         const uiContainer = document.getElementById('ui-container');
         const restoreBtn = document.getElementById('restore-ui-btn');
         
@@ -777,7 +764,6 @@
             uiContainer.classList.toggle('show-help');
         };
 
-        // 统计
         let lastTime = 0;
         let frames = 0;
         const elFps = document.getElementById('stat-fps');
@@ -790,19 +776,14 @@
             if (now - lastTime >= 1000) {
                 elFps.innerText = frames;
                 elSteps.innerText = steps + "/frame";
-                // 估算温度：由于回读显存太慢，这里随机波动显示一个假数值代表活跃度，或者显示 timeScale
-                // 真正的系统温度需要 readPixels，这会杀死 WebGL 性能。
-                // 作为一个折中，我们显示 "N/A (GPU)" 或者基于规则矩阵平均值估算
                 let avgRule = 0;
                 for(let i=0; i<64; i++) avgRule += Math.abs(rules[i]);
                 elTemp.innerText = (avgRule / (numTypes*numTypes) * 10).toFixed(2); 
-                
                 frames = 0;
                 lastTime = now;
             }
         }
 
-        // 启动
         resize();
         generateColors();
         randomizeRules();
