@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPU 演化实验室 - 通用兼容版</title>
+    <title>GPU 演化实验室 - 2D架构解锁版</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        /* 恢复按钮 */
         #restore-ui-btn {
             position: absolute; top: 20px; left: 20px;
             background: rgba(20, 20, 30, 0.6); color: #00ffaa;
@@ -19,7 +18,6 @@
         }
         #restore-ui-btn:hover { background: rgba(20, 20, 30, 0.9); box-shadow: 0 0 15px rgba(0,255,170,0.2); }
 
-        /* 主面板 */
         #ui-container {
             position: absolute; top: 20px; left: 20px; width: 320px;
             background: rgba(12, 12, 18, 0.92); padding: 20px;
@@ -33,20 +31,17 @@
         #ui-container::-webkit-scrollbar { width: 4px; }
         #ui-container::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
-        /* 标题栏 */
         .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px; flex-direction: column; }
         .header-top { display: flex; justify-content: space-between; width: 100%; align-items: center; }
         h1 { margin: 0; font-size: 16px; color: #00ffaa; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; }
-        .gpu-badge { background: #76b900; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-left: 8px; box-shadow: 0 0 10px rgba(118, 185, 0, 0.4); }
+        .gpu-badge { background: #ffcc00; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-left: 8px; box-shadow: 0 0 10px rgba(255, 204, 0, 0.4); }
         
         .header-btns button { background: none; border: none; color: #888; font-size: 16px; cursor: pointer; padding: 4px; transition: color 0.2s; }
         .header-btns button:hover { color: #fff; }
 
-        /* GPU 信息显示 */
         .gpu-info { font-size: 10px; color: #666; margin-top: 5px; word-break: break-all; }
         .gpu-info span { color: #00aaff; }
 
-        /* 控件组 */
         .control-group { margin-bottom: 12px; position: relative; }
         label { display: flex; justify-content: space-between; font-size: 12px; color: #ccc; margin-bottom: 6px; font-weight: 500; }
         .val-display { color: #00ffaa; font-family: monospace; }
@@ -55,36 +50,30 @@
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00ffaa; border-radius: 50%; cursor: pointer; transition: transform 0.1s; box-shadow: 0 0 8px rgba(0,255,170,0.3); }
         input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); background: #fff; }
 
-        /* 帮助文本 */
         .help-box { display: none; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; font-size: 11px; color: #aaa; margin-top: 4px; line-height: 1.4; border-left: 2px solid #00ffaa; }
         .show-help .help-box { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
 
-        /* 按钮组 */
         .btn-group { display: flex; gap: 10px; margin-top: 20px; }
         button.action { flex: 1; background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: 600; }
         button.action:hover { background: #333; border-color: #666; }
         button.primary { background: #00ffaa; color: #001100; border: none; }
         button.primary:hover { background: #fff; box-shadow: 0 0 15px rgba(0,255,170,0.4); }
 
-        /* 矩阵画布 */
         #matrix-container { position: relative; margin-top: 20px; }
         #matrix-canvas { width: 100%; height: auto; border-radius: 4px; border: 1px solid #333; cursor: crosshair; image-rendering: pixelated; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .matrix-title { font-size: 11px; color: #666; margin-bottom: 5px; display: flex; justify-content: space-between; }
 
-        /* 统计面板 */
         #stats-panel { margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
         .stat-row { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 4px; }
         .stat-val { color: #fff; font-family: monospace; }
 
-        /* 底部状态 */
         .status-bar { text-align: center; margin-top: 15px; font-size: 10px; color: #555; }
         .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #333; margin-right: 5px; }
         .running .dot { background: #00ffaa; box-shadow: 0 0 5px #00ffaa; animation: pulse 1s infinite; }
         .paused .dot { background: #ff3366; }
         @keyframes pulse { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
 
-        /* 编辑弹窗 */
         #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         #edit-modal.active { display: flex; }
         .modal-card { background: #1a1a20; padding: 20px; border-radius: 12px; border: 1px solid #444; width: 220px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
@@ -101,7 +90,7 @@
     <div id="ui-container">
         <div class="header">
             <div class="header-top">
-                <h1>GPU 演化引擎 <span class="gpu-badge">WebGL</span></h1>
+                <h1>GPU 演化引擎 <span class="gpu-badge">Unlimited</span></h1>
                 <div class="header-btns">
                     <button id="help-btn" title="显示/隐藏说明">?</button>
                     <button id="hide-btn" title="专注模式">_</button>
@@ -112,35 +101,31 @@
         
         <div class="control-group">
             <label>时间倍率 (播放速度) <span id="speed-val" class="val-display">1.0x</span></label>
-            <input type="range" id="speed-slider" min="0.1" max="5.0" value="1.0" step="0.1">
+            <input type="range" id="speed-slider" min="0.1" max="10.0" value="1.0" step="0.1">
             <div class="help-box">
                 控制世界运行的快慢。<br>
-                <b>注意</b>: 这只改变播放速度，不会改变物理结果。
+                <b>注意</b>: 高倍率下 GPU 负载会显著增加。
             </div>
         </div>
 
         <div class="control-group">
-            <label>粒子数量 <span id="count-val" class="val-display">10000</span></label>
-            <input type="range" id="atom-slider" min="1000" max="20000" value="10000" step="1000">
+            <!-- 增加 Max 到 60000 -->
+            <label>粒子数量 <span id="count-val" class="val-display">16000</span></label>
+            <input type="range" id="atom-slider" min="1000" max="60000" value="16000" step="1000">
             <div class="help-box">
-                调整宇宙中的物质总量。如果您的显卡较弱(如Intel集显)，建议调低至 5000 以下。
+                <b>2D 数据架构</b> 已启用，突破 16k 限制。<br>
+                警告: 40,000 粒子产生 16 亿次运算/帧，请留意显卡负载。
             </div>
         </div>
 
         <div class="control-group">
             <label>物种多样性 <span id="type-val" class="val-display">6</span></label>
             <input type="range" id="type-slider" min="2" max="8" value="6" step="1">
-            <div class="help-box">
-                宇宙中的元素种类数量。种类越多，形成的结构越混乱复杂。
-            </div>
         </div>
 
         <div class="control-group">
             <label>突变速率 <span id="drift-val" class="val-display">中</span></label>
             <input type="range" id="drift-slider" min="0" max="100" value="20">
-            <div class="help-box">
-                物理法则 (DNA) 随机漂移的速度。
-            </div>
         </div>
 
         <div class="control-group">
@@ -207,7 +192,10 @@
 
         uniform sampler2D u_texPos;
         uniform sampler2D u_texVel;
-        uniform vec2 u_resolution;
+        
+        // 关键更新：传入数据纹理的宽度，用于 2D 索引映射
+        uniform int u_texWidth; 
+        
         uniform int u_count;
         
         uniform float u_dt; 
@@ -225,8 +213,11 @@
         layout(location = 1) out vec4 outVel;
 
         void main() {
+            // 当前像素坐标 (x, y)
             ivec2 fragCoord = ivec2(gl_FragCoord.xy);
-            int index = fragCoord.x;
+            
+            // 将 2D 坐标转换为线性索引
+            int index = fragCoord.y * u_texWidth + fragCoord.x;
             
             if (index >= u_count) discard;
 
@@ -239,10 +230,15 @@
             
             vec2 force = vec2(0.0);
 
+            // 遍历所有粒子 (N^2)
+            // 需要将线性索引 i 转换回 2D 纹理坐标
             for (int i = 0; i < u_count; i++) {
                 if (i == index) continue;
 
-                vec4 otherPosData = texelFetch(u_texPos, ivec2(i, 0), 0);
+                // 2D 映射逻辑
+                ivec2 otherCoord = ivec2(i % u_texWidth, i / u_texWidth);
+                
+                vec4 otherPosData = texelFetch(u_texPos, otherCoord, 0);
                 vec2 otherPos = otherPosData.xy;
                 int otherType = int(otherPosData.z);
 
@@ -290,12 +286,15 @@
         uniform sampler2D u_texPos;
         uniform vec2 u_resolution;
         uniform vec3 u_colors[8]; 
+        uniform int u_texWidth; // 需传入宽度以计算读取位置
 
         out vec3 v_color;
 
         void main() {
             int id = gl_VertexID;
-            ivec2 coord = ivec2(id, 0);
+            
+            // VertexID 转 2D 纹理坐标
+            ivec2 coord = ivec2(id % u_texWidth, id / u_texWidth);
             
             vec4 posData = texelFetch(u_texPos, coord, 0);
             vec2 pos = posData.xy;
@@ -331,39 +330,38 @@
         const gl = canvas.getContext('webgl2');
         
         if (!gl) {
-            alert("错误：您的浏览器不支持 WebGL 2.0，无法启动 GPU 引擎。请尝试 Chrome 或 Edge。");
+            alert("错误：不支持 WebGL 2.0。");
             throw new Error("WebGL2 not supported");
         }
         
         const ext = gl.getExtension("EXT_color_buffer_float");
         if (!ext) {
-            alert("错误：您的显卡不支持浮点纹理运算。");
+            alert("错误：显卡不支持浮点纹理。");
             throw new Error("Missing EXT_color_buffer_float");
         }
 
-        // --- 硬件检测 ---
+        // --- 核心改动：固定数据纹理宽度 ---
+        // 使用 512x512 的纹理，理论上限 262,144 粒子
+        // 这足以覆盖我们想要运行的范围
+        const DATA_WIDTH = 512;
+        const DATA_HEIGHT = 512;
+        const MAX_CAPACITY = DATA_WIDTH * DATA_HEIGHT; 
+
+        // 硬件检测
         function detectGPU() {
             const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
             if (debugInfo) {
                 const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
                 document.getElementById('gpu-name').innerHTML = "硬件: <span>" + renderer + "</span>";
-                
-                // 简单的性能启发式判断
-                // 如果包含 Intel, UHD, Iris 等关键词，可能性能较弱
                 const lowPerf = /intel|uhd|iris|hd graphics/i.test(renderer);
-                if (lowPerf) {
-                    return 4000; // 集成显卡限制默认粒子数
-                }
+                if (lowPerf) return 4000;
             }
-            return 10000; // 默认
+            return 16000;
         }
         const defaultParticles = detectGPU();
-
-        const MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-        const MAX_CAPACITY = Math.min(20000, MAX_TEXTURE_SIZE); 
         
         // --- 参数 ---
-        let numParticles = Math.min(defaultParticles, MAX_CAPACITY);
+        let numParticles = Math.min(defaultParticles, 60000); // UI 软限制
         let numTypes = 6;
         let rules = new Float32Array(64); 
         let colors = [];
@@ -381,7 +379,7 @@
         let timeAccumulator = 0; 
 
         // --- UI ---
-        document.getElementById('atom-slider').max = MAX_CAPACITY;
+        document.getElementById('atom-slider').max = 60000; // 软限制在6万，防止N^2爆炸
         document.getElementById('atom-slider').value = numParticles;
         document.getElementById('count-val').innerText = numParticles;
 
@@ -402,7 +400,6 @@
             const vs = createShader(gl, gl.VERTEX_SHADER, vsSrc);
             const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSrc);
             if (!vs || !fs) return null;
-            
             const prog = gl.createProgram();
             gl.attachShader(prog, vs);
             gl.attachShader(prog, fs);
@@ -420,14 +417,15 @@
             document.getElementById('fs-render').text
         );
 
-        // --- Textures ---
+        // --- Textures (2D) ---
         let textures = []; 
         let readIdx = 0;
 
         function createDataTexture() {
             const tex = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, MAX_CAPACITY, 1, 0, gl.RGBA, gl.FLOAT, null);
+            // 关键：创建 DATA_WIDTH x DATA_HEIGHT 的 2D 纹理
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, DATA_WIDTH, DATA_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -461,11 +459,12 @@
                 velData[i*4 + 0] = 0;
                 velData[i*4 + 1] = 0;
             }
+            // 数据上传到 2D 纹理
             for (let i = 0; i < 2; i++) {
                 gl.bindTexture(gl.TEXTURE_2D, textures[i].pos);
-                gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAX_CAPACITY, 1, gl.RGBA, gl.FLOAT, posData);
+                gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, DATA_WIDTH, DATA_HEIGHT, gl.RGBA, gl.FLOAT, posData);
                 gl.bindTexture(gl.TEXTURE_2D, textures[i].vel);
-                gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAX_CAPACITY, 1, gl.RGBA, gl.FLOAT, velData);
+                gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, DATA_WIDTH, DATA_HEIGHT, gl.RGBA, gl.FLOAT, velData);
             }
         }
 
@@ -626,7 +625,8 @@
 
             gl.useProgram(physicsProgram);
             gl.bindFramebuffer(gl.FRAMEBUFFER, writeTex.fb);
-            gl.viewport(0, 0, MAX_CAPACITY, 1);
+            // 视口必须设置为 2D 纹理的完整尺寸
+            gl.viewport(0, 0, DATA_WIDTH, DATA_HEIGHT);
 
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, readTex.pos);
@@ -636,6 +636,7 @@
             gl.bindTexture(gl.TEXTURE_2D, readTex.vel);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texVel"), 1);
 
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texWidth"), DATA_WIDTH); // 传入宽度
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_count"), numParticles);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_dt"), FIXED_DT); 
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_friction"), params.friction);
@@ -668,6 +669,8 @@
             gl.bindTexture(gl.TEXTURE_2D, textures[readIdx].pos);
             gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texPos"), 0);
             
+            // 同样需要宽度来计算渲染时的UV
+            gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texWidth"), DATA_WIDTH); 
             gl.uniform2f(gl.getUniformLocation(renderProgram, "u_resolution"), params.width, params.height);
             gl.uniform3fv(gl.getUniformLocation(renderProgram, "u_colors"), new Float32Array(colors));
 
