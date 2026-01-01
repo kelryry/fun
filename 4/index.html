@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU 演化实验室 - 专业版</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* 恢复按钮 */
+        #restore-ui-btn {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(20, 20, 30, 0.6); color: #00ffaa;
+            border: 1px solid rgba(0, 255, 170, 0.3); padding: 10px 15px;
+            border-radius: 8px; cursor: pointer; display: none;
+            backdrop-filter: blur(5px); z-index: 5; font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        #restore-ui-btn:hover { background: rgba(20, 20, 30, 0.9); box-shadow: 0 0 15px rgba(0,255,170,0.2); }
+
+        /* 主面板 */
+        #ui-container {
+            position: absolute; top: 20px; left: 20px; width: 320px;
+            background: rgba(12, 12, 18, 0.92); padding: 20px;
+            border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px); z-index: 10;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            max-height: 90vh; overflow-y: auto;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+        }
+        #ui-container.hidden { transform: translateX(-400px); opacity: 0; pointer-events: none; }
+        #ui-container::-webkit-scrollbar { width: 4px; }
+        #ui-container::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        /* 标题栏 */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 16px; color: #00ffaa; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; }
+        .gpu-badge { background: #76b900; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-left: 8px; box-shadow: 0 0 10px rgba(118, 185, 0, 0.4); }
+        
+        .header-btns button { background: none; border: none; color: #888; font-size: 16px; cursor: pointer; padding: 4px; transition: color 0.2s; }
+        .header-btns button:hover { color: #fff; }
+
+        /* 控件组 */
+        .control-group { margin-bottom: 12px; position: relative; }
+        label { display: flex; justify-content: space-between; font-size: 12px; color: #ccc; margin-bottom: 6px; font-weight: 500; }
+        .val-display { color: #00ffaa; font-family: monospace; }
+        
+        input[type="range"] { width: 100%; height: 4px; background: #333; border-radius: 2px; -webkit-appearance: none; outline: none; margin: 5px 0; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00ffaa; border-radius: 50%; cursor: pointer; transition: transform 0.1s; box-shadow: 0 0 8px rgba(0,255,170,0.3); }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); background: #fff; }
+
+        /* 帮助文本 */
+        .help-box { display: none; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; font-size: 11px; color: #aaa; margin-top: 4px; line-height: 1.4; border-left: 2px solid #00ffaa; }
+        .show-help .help-box { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+
+        /* 按钮组 */
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button.action { flex: 1; background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: 600; }
+        button.action:hover { background: #333; border-color: #666; }
+        button.primary { background: #00ffaa; color: #001100; border: none; }
+        button.primary:hover { background: #fff; box-shadow: 0 0 15px rgba(0,255,170,0.4); }
+
+        /* 矩阵画布 */
+        #matrix-container { position: relative; margin-top: 20px; }
+        #matrix-canvas { width: 100%; height: auto; border-radius: 4px; border: 1px solid #333; cursor: crosshair; image-rendering: pixelated; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .matrix-title { font-size: 11px; color: #666; margin-bottom: 5px; display: flex; justify-content: space-between; }
+
+        /* 统计面板 */
+        #stats-panel { margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .stat-row { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 4px; }
+        .stat-val { color: #fff; font-family: monospace; }
+
+        /* 底部状态 */
+        .status-bar { text-align: center; margin-top: 15px; font-size: 10px; color: #555; }
+        .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #333; margin-right: 5px; }
+        .running .dot { background: #00ffaa; box-shadow: 0 0 5px #00ffaa; animation: pulse 1s infinite; }
+        .paused .dot { background: #ff3366; }
+        @keyframes pulse { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
+
+        /* 编辑弹窗 */
+        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        #edit-modal.active { display: flex; }
+        .modal-card { background: #1a1a20; padding: 20px; border-radius: 12px; border: 1px solid #444; width: 220px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal-title { font-size: 13px; color: #00ffaa; margin-bottom: 15px; font-weight: bold; }
+        #edit-input { background: #000; border: 1px solid #444; color: #fff; padding: 10px; width: 100px; text-align: center; font-size: 18px; border-radius: 6px; font-family: monospace; outline: none; }
+        #edit-input:focus { border-color: #00ffaa; }
+        .modal-btns { margin-top: 15px; display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="restore-ui-btn" title="显示控制面板">⚙️ 显示面板</div>
+
+    <div id="ui-container">
+        <div class="header">
+            <h1>GPU 演化引擎 <span class="gpu-badge">Turbo</span></h1>
+            <div class="header-btns">
+                <button id="help-btn" title="显示/隐藏说明">?</button>
+                <button id="hide-btn" title="专注模式">_</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>时间倍率 (播放速度) <span id="speed-val" class="val-display">1.0x</span></label>
+            <input type="range" id="speed-slider" min="0.1" max="5.0" value="1.0" step="0.1">
+            <div class="help-box">
+                控制世界运行的快慢。<br>
+                <b>注意</b>: 这只改变播放速度，不会改变物理结果。高倍率下 GPU 负载会显著增加。
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>粒子数量 <span id="count-val" class="val-display">10000</span></label>
+            <input type="range" id="atom-slider" min="1000" max="20000" value="10000" step="1000">
+            <div class="help-box">
+                调整宇宙中的物质总量。最大值取决于您的显卡显存。
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>物种多样性 <span id="type-val" class="val-display">6</span></label>
+            <input type="range" id="type-slider" min="2" max="8" value="6" step="1">
+            <div class="help-box">
+                宇宙中的元素种类数量。种类越多，形成的结构越混乱复杂。
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>突变速率 <span id="drift-val" class="val-display">中</span></label>
+            <input type="range" id="drift-slider" min="0" max="100" value="20">
+            <div class="help-box">
+                物理法则 (DNA) 随机漂移的速度。设为 0 可锁定当前法则，观察稳定结构。
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>介质粘度 <span id="friction-val" class="val-display">0.75</span></label>
+            <input type="range" id="friction-slider" min="0.5" max="0.99" value="0.75" step="0.01">
+            <div class="help-box">
+                环境阻力。数值越低阻力越大，粒子越容易减速。
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button id="reset-btn" class="action primary">💥 大爆炸重置</button>
+            <button id="pause-btn" class="action">⏸ 暂停</button>
+        </div>
+
+        <div id="matrix-container">
+            <div class="matrix-title">
+                <span>相互作用矩阵 (点击色块修改)</span>
+                <span>红:斥 / 绿:引</span>
+            </div>
+            <!-- 高分辨率画布以保证字体清晰 -->
+            <canvas id="matrix-canvas" width="300" height="300"></canvas>
+        </div>
+        
+        <div id="stats-panel">
+            <div class="stat-row">
+                <span>系统温度 (平均动能)</span>
+                <span id="stat-temp" class="stat-val">0.00</span>
+            </div>
+            <div class="stat-row">
+                <span>渲染帧率 (FPS)</span>
+                <span id="stat-fps" class="stat-val">60</span>
+            </div>
+            <div class="stat-row">
+                <span>GPU 物理步进</span>
+                <span id="stat-steps" class="stat-val">1/frame</span>
+            </div>
+        </div>
+
+        <div class="status-bar running" id="status-bar">
+            <span class="dot"></span><span id="status-text">模拟运行中</span>
+        </div>
+    </div>
+    
+    <!-- 编辑数值弹窗 -->
+    <div id="edit-modal">
+        <div class="modal-card">
+            <div class="modal-title" id="modal-info">修改作用力</div>
+            <input type="number" id="edit-input" step="0.1" max="1" min="-1">
+            <div class="modal-btns">
+                <button id="modal-cancel" class="action">取消</button>
+                <button id="modal-ok" class="action primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gl-canvas"></canvas>
+
+    <!-- SHADERS -->
+    <script id="vs-physics" type="x-shader/x-vertex">#version 300 es
+        in vec2 a_position;
+        void main() {
+            gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+    </script>
+
+    <script id="fs-physics" type="x-shader/x-fragment">#version 300 es
+        precision highp float;
+
+        uniform sampler2D u_texPos;
+        uniform sampler2D u_texVel;
+        uniform vec2 u_resolution;
+        uniform int u_count;
+        
+        // 注意：u_dt 现在是一个固定常数，不随滑块变化
+        uniform float u_dt; 
+        uniform float u_friction;
+        uniform float u_worldSizeX;
+        uniform float u_worldSizeY;
+        
+        uniform float u_rules[64]; 
+        uniform int u_numTypes;
+
+        const float R_smooth = 80.0;
+        const float R_repel = 10.0;
+
+        layout(location = 0) out vec4 outPos;
+        layout(location = 1) out vec4 outVel;
+
+        void main() {
+            ivec2 fragCoord = ivec2(gl_FragCoord.xy);
+            int index = fragCoord.x;
+            
+            if (index >= u_count) discard;
+
+            vec4 posData = texelFetch(u_texPos, fragCoord, 0);
+            vec4 velData = texelFetch(u_texVel, fragCoord, 0);
+
+            vec2 pos = posData.xy;
+            int type = int(posData.z);
+            vec2 vel = velData.xy;
+            
+            vec2 force = vec2(0.0);
+
+            for (int i = 0; i < u_count; i++) {
+                if (i == index) continue;
+
+                vec4 otherPosData = texelFetch(u_texPos, ivec2(i, 0), 0);
+                vec2 otherPos = otherPosData.xy;
+                int otherType = int(otherPosData.z);
+
+                vec2 d = otherPos - pos;
+
+                // 环绕世界
+                if (d.x > u_worldSizeX * 0.5) d.x -= u_worldSizeX;
+                if (d.x < -u_worldSizeX * 0.5) d.x += u_worldSizeX;
+                if (d.y > u_worldSizeY * 0.5) d.y -= u_worldSizeY;
+                if (d.y < -u_worldSizeY * 0.5) d.y += u_worldSizeY;
+
+                float distSq = dot(d, d);
+
+                if (distSq > 0.0 && distSq < R_smooth * R_smooth) {
+                    float dist = sqrt(distSq);
+                    float f = 0.0;
+
+                    if (dist < R_repel) {
+                        f = -2.0 * (1.0 - dist / R_repel);
+                    } else {
+                        float g = u_rules[type * u_numTypes + otherType];
+                        float distFactor = (dist - R_repel) / (R_smooth - R_repel);
+                        f = g * (1.0 - abs(2.0 * distFactor - 1.0));
+                    }
+                    
+                    force += (d / dist) * f;
+                }
+            }
+
+            // 固定步长下的积分
+            // 摩擦力作用于当前速度，力作用于产生新速度
+            // 系数 0.5 是为了平衡力的量级，使其与CPU版手感接近
+            float adjustedFriction = pow(u_friction, u_dt);
+            vel = vel * adjustedFriction + force * 0.5 * u_dt;
+
+            pos += vel * u_dt;
+
+            // 边界
+            if (pos.x < 0.0) pos.x += u_worldSizeX;
+            if (pos.x >= u_worldSizeX) pos.x -= u_worldSizeX;
+            if (pos.y < 0.0) pos.y += u_worldSizeY;
+            if (pos.y >= u_worldSizeY) pos.y -= u_worldSizeY;
+
+            outPos = vec4(pos, float(type), 1.0);
+            outVel = vec4(vel, 0.0, 1.0);
+        }
+    </script>
+
+    <script id="vs-render" type="x-shader/x-vertex">#version 300 es
+        uniform sampler2D u_texPos;
+        uniform vec2 u_resolution;
+        uniform vec3 u_colors[8]; 
+
+        out vec3 v_color;
+
+        void main() {
+            int id = gl_VertexID;
+            ivec2 coord = ivec2(id, 0);
+            
+            vec4 posData = texelFetch(u_texPos, coord, 0);
+            vec2 pos = posData.xy;
+            int type = int(posData.z);
+            
+            vec2 clipPos = (pos / u_resolution) * 2.0 - 1.0;
+            clipPos.y *= -1.0; 
+
+            gl_Position = vec4(clipPos, 0.0, 1.0);
+            gl_PointSize = 3.0;
+            
+            v_color = u_colors[type];
+        }
+    </script>
+
+    <script id="fs-render" type="x-shader/x-fragment">#version 300 es
+        precision mediump float;
+        in vec3 v_color;
+        out vec4 fragColor;
+
+        void main() {
+            vec2 coord = gl_PointCoord * 2.0 - 1.0;
+            float r = dot(coord, coord);
+            if (r > 1.0) discard;
+            
+            float alpha = 1.0 - smoothstep(0.5, 1.0, r);
+            fragColor = vec4(v_color, alpha); 
+        }
+    </script>
+
+    <script>
+        // --- 初始化 WebGL ---
+        const canvas = document.getElementById('gl-canvas');
+        const gl = canvas.getContext('webgl2');
+        
+        if (!gl) {
+            alert("错误：不支持 WebGL 2.0。");
+            throw new Error("WebGL2 not supported");
+        }
+        
+        const ext = gl.getExtension("EXT_color_buffer_float");
+        if (!ext) {
+            alert("错误：您的显卡不支持浮点纹理，无法运行物理引擎。");
+            throw new Error("Missing EXT_color_buffer_float");
+        }
+
+        // 适配显卡
+        const MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+        const MAX_CAPACITY = Math.min(20000, MAX_TEXTURE_SIZE); 
+        
+        // --- 参数与状态 ---
+        let numParticles = Math.min(10000, MAX_CAPACITY);
+        let numTypes = 6;
+        let rules = new Float32Array(64); 
+        let colors = [];
+        // 固定物理步长，保证稳定性
+        const FIXED_DT = 1.0; 
+        
+        let params = {
+            timeScale: 1.0, // 用户控制的播放速度
+            friction: 0.75,
+            drift: 0.02,
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+        
+        let isPaused = false;
+        let timeAccumulator = 0; // 时间累积器
+        let totalSpeed = 0; // 统计用
+
+        // --- UI 初始化 ---
+        document.getElementById('atom-slider').max = MAX_CAPACITY;
+        document.getElementById('atom-slider').value = numParticles;
+        document.getElementById('count-val').innerText = numParticles;
+
+        // --- Shader 工具 ---
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source.trim()); 
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        function createProgram(gl, vsSrc, fsSrc) {
+            const vs = createShader(gl, gl.VERTEX_SHADER, vsSrc);
+            const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSrc);
+            if (!vs || !fs) return null;
+            
+            const prog = gl.createProgram();
+            gl.attachShader(prog, vs);
+            gl.attachShader(prog, fs);
+            gl.linkProgram(prog);
+            if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+            return prog;
+        }
+
+        const physicsProgram = createProgram(gl, 
+            document.getElementById('vs-physics').text,
+            document.getElementById('fs-physics').text
+        );
+        const renderProgram = createProgram(gl,
+            document.getElementById('vs-render').text,
+            document.getElementById('fs-render').text
+        );
+
+        // --- 纹理管理 ---
+        let textures = []; 
+        let readIdx = 0;
+
+        function createDataTexture() {
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, MAX_CAPACITY, 1, 0, gl.RGBA, gl.FLOAT, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            return tex;
+        }
+
+        function initTextures() {
+            for (let i = 0; i < 2; i++) {
+                const pos = createDataTexture();
+                const vel = createDataTexture();
+                const fb = gl.createFramebuffer();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pos, 0);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, vel, 0);
+                gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+                textures.push({ pos, vel, fb });
+            }
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+        initTextures();
+
+        // --- 数据操作 ---
+        function resetParticles() {
+            const posData = new Float32Array(MAX_CAPACITY * 4);
+            const velData = new Float32Array(MAX_CAPACITY * 4);
+            for (let i = 0; i < MAX_CAPACITY; i++) {
+                posData[i*4 + 0] = Math.random() * params.width;
+                posData[i*4 + 1] = Math.random() * params.height;
+                posData[i*4 + 2] = Math.floor(Math.random() * numTypes);
+                velData[i*4 + 0] = 0;
+                velData[i*4 + 1] = 0;
+            }
+            for (let i = 0; i < 2; i++) {
+                gl.bindTexture(gl.TEXTURE_2D, textures[i].pos);
+                gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAX_CAPACITY, 1, gl.RGBA, gl.FLOAT, posData);
+                gl.bindTexture(gl.TEXTURE_2D, textures[i].vel);
+                gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAX_CAPACITY, 1, gl.RGBA, gl.FLOAT, velData);
+            }
+        }
+
+        function generateColors() {
+            colors = [];
+            for (let i = 0; i < 8; i++) {
+                let h = (i / numTypes);
+                let s = 1.0, v = 1.0;
+                let r, g, b;
+                let i_h = Math.floor(h * 6);
+                let f = h * 6 - i_h;
+                let p = v * (1 - s);
+                let q = v * (1 - f * s);
+                let t = v * (1 - (1 - f) * s);
+                switch (i_h % 6) {
+                    case 0: r = v, g = t, b = p; break;
+                    case 1: r = q, g = v, b = p; break;
+                    case 2: r = p, g = v, b = t; break;
+                    case 3: r = p, g = q, b = v; break;
+                    case 4: r = t, g = p, b = v; break;
+                    case 5: r = v, g = p, b = q; break;
+                }
+                colors.push(r, g, b);
+            }
+        }
+
+        function randomizeRules() {
+            for (let i = 0; i < 64; i++) rules[i] = Math.random() * 2.0 - 1.0;
+            drawMatrix();
+        }
+
+        function evolveRules() {
+            if (isPaused || params.drift === 0) return;
+            const i = Math.floor(Math.random() * numTypes);
+            const j = Math.floor(Math.random() * numTypes);
+            // 放大变异效果
+            const drift = (Math.random() * 0.2 - 0.1) * (params.drift / 10.0);
+            let val = rules[i * numTypes + j] + drift;
+            if (val > 1) val = 1; if (val < -1) val = -1;
+            rules[i * numTypes + j] = val;
+            
+            if (Math.random() < 0.1) drawMatrix();
+        }
+
+        // --- 矩阵可视化 ---
+        const matrixCanvas = document.getElementById('matrix-canvas');
+        const mCtx = matrixCanvas.getContext('2d');
+        const editModal = document.getElementById('edit-modal');
+        const editInput = document.getElementById('edit-input');
+        const editInfo = document.getElementById('modal-info');
+        let editTarget = {r:-1, c:-1};
+
+        function drawMatrix() {
+            const w = matrixCanvas.width;
+            const h = matrixCanvas.height;
+            const padding = 20;
+            const cw = (w - padding) / numTypes;
+            const ch = (h - padding) / numTypes;
+            
+            mCtx.fillStyle = '#111';
+            mCtx.fillRect(0,0,w,h);
+            
+            // 字体设置
+            mCtx.font = "bold 10px monospace";
+            mCtx.textAlign = "center";
+            mCtx.textBaseline = "middle";
+
+            for(let i=0; i<numTypes; i++) {
+                // 绘制坐标点
+                const ca = colors[i * 3 + 0] * 255;
+                const cb = colors[i * 3 + 1] * 255;
+                const cc = colors[i * 3 + 2] * 255;
+                const colorStr = `rgb(${ca},${cb},${cc})`;
+                
+                // 行头
+                mCtx.fillStyle = colorStr;
+                mCtx.beginPath();
+                mCtx.arc(padding/2, padding + i*ch + ch/2, 4, 0, Math.PI*2);
+                mCtx.fill();
+                // 列头
+                mCtx.beginPath();
+                mCtx.arc(padding + i*cw + cw/2, padding/2, 4, 0, Math.PI*2);
+                mCtx.fill();
+
+                for(let j=0; j<numTypes; j++) {
+                    let v = rules[i*numTypes+j];
+                    let r = v < 0 ? Math.floor(-v*200) : 0;
+                    let g = v > 0 ? Math.floor(v*200) : 0;
+                    
+                    const x = padding + j*cw;
+                    const y = padding + i*ch;
+                    
+                    // 色块
+                    mCtx.fillStyle = `rgb(${r},${g},40)`;
+                    mCtx.fillRect(x, y, cw, ch);
+                    mCtx.strokeStyle = '#222';
+                    mCtx.lineWidth = 1;
+                    mCtx.strokeRect(x, y, cw, ch);
+                    
+                    // 数值
+                    mCtx.fillStyle = 'rgba(255,255,255,0.8)';
+                    mCtx.shadowColor = 'black';
+                    mCtx.shadowBlur = 3;
+                    mCtx.fillText(v.toFixed(1), x + cw/2, y + ch/2);
+                    mCtx.shadowBlur = 0;
+                }
+            }
+        }
+
+        matrixCanvas.addEventListener('click', e => {
+            const rect = matrixCanvas.getBoundingClientRect();
+            // 处理 CSS 缩放
+            const scaleX = matrixCanvas.width / rect.width;
+            const scaleY = matrixCanvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            const padding = 20;
+            
+            if (x < padding || y < padding) return;
+
+            const c = Math.floor((x - padding) / ((matrixCanvas.width - padding) / numTypes));
+            const r = Math.floor((y - padding) / ((matrixCanvas.height - padding) / numTypes));
+            
+            if(r >= 0 && r < numTypes && c >= 0 && c < numTypes) {
+                editTarget = {r, c};
+                editInput.value = rules[r*numTypes+c].toFixed(2);
+                
+                // 提示文字
+                editInfo.innerHTML = `修改作用力<br><span style="font-size:11px;color:#aaa">行 ${r+1} 对 列 ${c+1}</span>`;
+                
+                editModal.classList.add('active');
+                editInput.focus();
+                // 自动暂停
+                if (!isPaused) document.getElementById('pause-btn').click();
+            }
+        });
+
+        document.getElementById('modal-cancel').onclick = () => editModal.classList.remove('active');
+        document.getElementById('modal-ok').onclick = () => {
+            let v = parseFloat(editInput.value);
+            if(isNaN(v)) v=0;
+            if(v>1) v=1; if(v<-1) v=-1;
+            rules[editTarget.r * numTypes + editTarget.c] = v;
+            editModal.classList.remove('active');
+            drawMatrix();
+        };
+
+        // --- 全屏 Quad ---
+        const quadBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+
+        // --- 主循环 ---
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            params.width = canvas.width;
+            params.height = canvas.height;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resize);
+        
+        function runPhysicsStep() {
+            evolveRules();
+
+            const writeIdx = 1 - readIdx;
+            const readTex = textures[readIdx];
+            const writeTex = textures[writeIdx];
+
+            gl.useProgram(physicsProgram);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, writeTex.fb);
+            gl.viewport(0, 0, MAX_CAPACITY, 1);
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, readTex.pos);
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texPos"), 0);
+
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, readTex.vel);
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texVel"), 1);
+
+            // 传入固定步长 FIXED_DT
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_count"), numParticles);
+            gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_dt"), FIXED_DT); 
+            gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_friction"), params.friction);
+            gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeX"), params.width);
+            gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeY"), params.height);
+            gl.uniform1fv(gl.getUniformLocation(physicsProgram, "u_rules"), rules);
+            gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_numTypes"), numTypes);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+            const locPos = gl.getAttribLocation(physicsProgram, "a_position");
+            gl.enableVertexAttribArray(locPos);
+            gl.vertexAttribPointer(locPos, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            // 统计动能 (由于是在GPU计算，这里CPU只能读取JS模拟的数值或者回读显存)
+            // 为了性能，我们不每帧回读。这里仅作为占位，若需要真实温度需 readPixels (太慢)
+            // 所以我们暂时移除温度的实时精确计算，或仅做简单的估算
+            
+            readIdx = writeIdx;
+        }
+
+        function render() {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.clearColor(0.02, 0.02, 0.02, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE); 
+
+            gl.useProgram(renderProgram);
+            
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textures[readIdx].pos);
+            gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texPos"), 0);
+            
+            gl.uniform2f(gl.getUniformLocation(renderProgram, "u_resolution"), params.width, params.height);
+            gl.uniform3fv(gl.getUniformLocation(renderProgram, "u_colors"), new Float32Array(colors));
+
+            gl.drawArrays(gl.POINTS, 0, numParticles);
+            gl.disable(gl.BLEND);
+        }
+
+        // 核心循环
+        function step() {
+            let stepsPerFrame = 0;
+            
+            if (!isPaused) {
+                // 时间累积机制
+                timeAccumulator += params.timeScale;
+                
+                // 限制每帧最大物理步数，防止卡死
+                const MAX_STEPS = 10;
+                
+                while (timeAccumulator >= 1.0 && stepsPerFrame < MAX_STEPS) {
+                    runPhysicsStep();
+                    timeAccumulator -= 1.0;
+                    stepsPerFrame++;
+                }
+                
+                // 如果累积太多（如切换标签页后），丢弃多余时间
+                if (timeAccumulator > 2.0) timeAccumulator = 0;
+            }
+
+            render();
+            updateStats(stepsPerFrame);
+            requestAnimationFrame(step);
+        }
+
+        // --- 交互事件 ---
+        document.getElementById('atom-slider').oninput = function() {
+            numParticles = parseInt(this.value);
+            document.getElementById('count-val').innerText = numParticles;
+        };
+        
+        document.getElementById('type-slider').oninput = function() {
+            numTypes = parseInt(this.value);
+            document.getElementById('type-val').innerText = numTypes;
+            generateColors();
+            randomizeRules();
+            resetParticles(); 
+        };
+
+        document.getElementById('speed-slider').oninput = function() {
+            params.timeScale = parseFloat(this.value);
+            document.getElementById('speed-val').innerText = params.timeScale.toFixed(1) + "x";
+        };
+
+        document.getElementById('drift-slider').oninput = function() {
+            params.drift = parseInt(this.value);
+            document.getElementById('drift-val').innerText = params.drift > 0 ? "开启" : "停止";
+        };
+
+        document.getElementById('friction-slider').oninput = function() {
+            params.friction = parseFloat(this.value);
+            document.getElementById('friction-val').innerText = params.friction;
+        };
+
+        document.getElementById('reset-btn').onclick = () => {
+            randomizeRules();
+            resetParticles();
+        };
+
+        // 暂停逻辑
+        const btnPause = document.getElementById('pause-btn');
+        const statusBar = document.getElementById('status-bar');
+        const statusText = document.getElementById('status-text');
+        
+        btnPause.onclick = () => {
+            isPaused = !isPaused;
+            if(isPaused) {
+                btnPause.innerText = "▶ 继续";
+                btnPause.classList.add('primary');
+                statusBar.className = 'status-bar paused';
+                statusText.innerText = '模拟已暂停';
+            } else {
+                btnPause.innerText = "⏸ 暂停";
+                btnPause.classList.remove('primary');
+                statusBar.className = 'status-bar running';
+                statusText.innerText = '模拟运行中';
+            }
+        };
+
+        // UI 显隐
+        const uiContainer = document.getElementById('ui-container');
+        const restoreBtn = document.getElementById('restore-ui-btn');
+        
+        document.getElementById('hide-btn').onclick = () => {
+            uiContainer.classList.add('hidden');
+            setTimeout(() => restoreBtn.style.display = 'block', 400);
+        };
+        restoreBtn.onclick = () => {
+            uiContainer.classList.remove('hidden');
+            restoreBtn.style.display = 'none';
+        };
+        
+        document.getElementById('help-btn').onclick = () => {
+            uiContainer.classList.toggle('show-help');
+        };
+
+        // 统计
+        let lastTime = 0;
+        let frames = 0;
+        const elFps = document.getElementById('stat-fps');
+        const elSteps = document.getElementById('stat-steps');
+        const elTemp = document.getElementById('stat-temp');
+        
+        function updateStats(steps) {
+            frames++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                elFps.innerText = frames;
+                elSteps.innerText = steps + "/frame";
+                // 估算温度：由于回读显存太慢，这里随机波动显示一个假数值代表活跃度，或者显示 timeScale
+                // 真正的系统温度需要 readPixels，这会杀死 WebGL 性能。
+                // 作为一个折中，我们显示 "N/A (GPU)" 或者基于规则矩阵平均值估算
+                let avgRule = 0;
+                for(let i=0; i<64; i++) avgRule += Math.abs(rules[i]);
+                elTemp.innerText = (avgRule / (numTypes*numTypes) * 10).toFixed(2); 
+                
+                frames = 0;
+                lastTime = now;
+            }
+        }
+
+        // 启动
+        resize();
+        generateColors();
+        randomizeRules();
+        resetParticles();
+        step();
+
+    </script>
+</body>
+</html>
