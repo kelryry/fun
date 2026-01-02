@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPU 演化实验室 - 2D架构解锁版</title>
+    <title>GPU 演化实验室 - 终极指南版</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        :root { --accent: #00ffaa; --bg: #08080c; --panel: rgba(15, 15, 20, 0.95); }
+        body { margin: 0; overflow: hidden; background-color: var(--bg); color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
+        /* 恢复按钮 */
         #restore-ui-btn {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(20, 20, 30, 0.6); color: #00ffaa;
+            background: rgba(20, 20, 30, 0.6); color: var(--accent);
             border: 1px solid rgba(0, 255, 170, 0.3); padding: 10px 15px;
             border-radius: 8px; cursor: pointer; display: none;
             backdrop-filter: blur(5px); z-index: 5; font-weight: bold;
@@ -18,142 +20,165 @@
         }
         #restore-ui-btn:hover { background: rgba(20, 20, 30, 0.9); box-shadow: 0 0 15px rgba(0,255,170,0.2); }
 
+        /* 主控制面板 */
         #ui-container {
-            position: absolute; top: 20px; left: 20px; width: 320px;
-            background: rgba(12, 12, 18, 0.92); padding: 20px;
+            position: absolute; top: 20px; left: 20px; width: 340px;
+            background: var(--panel); padding: 20px;
             border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(12px); z-index: 10;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             max-height: 90vh; overflow-y: auto;
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
         }
-        #ui-container.hidden { transform: translateX(-400px); opacity: 0; pointer-events: none; }
+        #ui-container.hidden { transform: translateX(-450px); opacity: 0; pointer-events: none; }
         #ui-container::-webkit-scrollbar { width: 4px; }
-        #ui-container::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        #ui-container::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
 
-        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px; flex-direction: column; }
-        .header-top { display: flex; justify-content: space-between; width: 100%; align-items: center; }
-        h1 { margin: 0; font-size: 16px; color: #00ffaa; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; }
-        .gpu-badge { background: #ffcc00; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-left: 8px; box-shadow: 0 0 10px rgba(255, 204, 0, 0.4); }
+        /* 标题栏 */
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px; }
+        .header-left h1 { margin: 0; font-size: 18px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; }
+        .header-left .subtitle { font-size: 10px; color: #666; margin-top: 4px; }
+        .gpu-badge { background: #7700ff; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-left: 8px; box-shadow: 0 0 10px rgba(119, 0, 255, 0.4); vertical-align: middle;}
         
-        .header-btns button { background: none; border: none; color: #888; font-size: 16px; cursor: pointer; padding: 4px; transition: color 0.2s; }
-        .header-btns button:hover { color: #fff; }
+        .header-btns button { background: none; border: 1px solid #444; color: #aaa; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; margin-left: 5px; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;}
+        .header-btns button:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
+        .header-btns button#help-btn { color: var(--accent); border-color: var(--accent); }
+        .header-btns button#help-btn:hover { background: var(--accent); color: #000; }
 
-        .gpu-info { font-size: 10px; color: #666; margin-top: 5px; word-break: break-all; }
-        .gpu-info span { color: #00aaff; }
+        /* 存档区 */
+        .io-group { display: flex; gap: 8px; margin-bottom: 20px; }
+        .io-btn { flex: 1; padding: 8px; font-size: 11px; background: rgba(0, 160, 255, 0.1); color: #00aaff; border: 1px solid rgba(0, 160, 255, 0.3); border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: center; font-weight: 600; }
+        .io-btn:hover { background: rgba(0, 160, 255, 0.3); color: #fff; }
+        #file-input { display: none; }
 
-        .control-group { margin-bottom: 12px; position: relative; }
-        label { display: flex; justify-content: space-between; font-size: 12px; color: #ccc; margin-bottom: 6px; font-weight: 500; }
-        .val-display { color: #00ffaa; font-family: monospace; }
+        /* 控件通用 */
+        .control-group { margin-bottom: 16px; position: relative; }
+        label { display: flex; justify-content: space-between; font-size: 12px; color: #ccc; margin-bottom: 8px; font-weight: 500; }
+        .val-display { color: var(--accent); font-family: 'Consolas', monospace; font-size: 12px; }
         
-        input[type="range"] { width: 100%; height: 4px; background: #333; border-radius: 2px; -webkit-appearance: none; outline: none; margin: 5px 0; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00ffaa; border-radius: 50%; cursor: pointer; transition: transform 0.1s; box-shadow: 0 0 8px rgba(0,255,170,0.3); }
+        input[type="range"] { width: 100%; height: 4px; background: #333; border-radius: 2px; -webkit-appearance: none; outline: none; display: block; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; transition: transform 0.1s; box-shadow: 0 0 10px rgba(0,255,170,0.3); border: 2px solid #1a1a20; }
         input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); background: #fff; }
 
-        .help-box { display: none; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; font-size: 11px; color: #aaa; margin-top: 4px; line-height: 1.4; border-left: 2px solid #00ffaa; }
-        .show-help .help-box { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+        /* 特殊样式：自然选择 */
+        .selection-group { border: 1px solid rgba(170, 85, 255, 0.3); background: linear-gradient(135deg, rgba(119, 0, 255, 0.05) 0%, rgba(119, 0, 255, 0.0) 100%); padding: 12px; border-radius: 8px; margin-bottom: 20px; }
+        .selection-group label { color: #d4aaff; }
+        .selection-group input[type="range"]::-webkit-slider-thumb { background: #d4aaff; box-shadow: 0 0 8px rgba(170, 85, 255, 0.5); }
 
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        button.action { flex: 1; background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: 600; }
-        button.action:hover { background: #333; border-color: #666; }
-        button.primary { background: #00ffaa; color: #001100; border: none; }
-        button.primary:hover { background: #fff; box-shadow: 0 0 15px rgba(0,255,170,0.4); }
+        /* 矩阵区域 */
+        #matrix-container { position: relative; margin-top: 25px; }
+        #matrix-canvas { width: 100%; height: auto; border-radius: 6px; border: 1px solid #333; cursor: crosshair; image-rendering: pixelated; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: border-color 0.2s; }
+        #matrix-canvas:hover { border-color: #666; }
+        .matrix-title { font-size: 11px; color: #888; margin-bottom: 8px; display: flex; justify-content: space-between; }
 
-        #matrix-container { position: relative; margin-top: 20px; }
-        #matrix-canvas { width: 100%; height: auto; border-radius: 4px; border: 1px solid #333; cursor: crosshair; image-rendering: pixelated; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .matrix-title { font-size: 11px; color: #666; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        /* 按钮 */
+        .btn-group { display: flex; gap: 10px; margin-top: 25px; }
+        button.action { flex: 1; background: #222; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        button.action:hover { background: #333; border-color: #666; transform: translateY(-1px); }
+        button.primary { background: var(--accent); color: #001a10; border: none; }
+        button.primary:hover { background: #fff; box-shadow: 0 0 20px rgba(0,255,170,0.4); }
 
-        #stats-panel { margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .stat-row { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 4px; }
-        .stat-val { color: #fff; font-family: monospace; }
-
-        .status-bar { text-align: center; margin-top: 15px; font-size: 10px; color: #555; }
-        .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #333; margin-right: 5px; }
-        .running .dot { background: #00ffaa; box-shadow: 0 0 5px #00ffaa; animation: pulse 1s infinite; }
+        /* 统计与状态 */
+        #stats-panel { margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: #666; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat-item span { color: #bbb; }
+        .stat-item b { color: var(--accent); font-family: monospace; margin-left: 4px; }
+        
+        .status-bar { grid-column: span 2; text-align: center; margin-top: 10px; font-size: 10px; color: #555; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: #333; }
+        .running .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 1.5s infinite; }
         .paused .dot { background: #ff3366; }
-        @keyframes pulse { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
+        @keyframes pulse { 0%{opacity:0.4;} 50%{opacity:1;} 100%{opacity:0.4;} }
 
-        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        /* --- 帮助手册 (Modal) --- */
+        #help-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 100; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        #help-modal.active { display: flex; opacity: 1; }
+        
+        .help-card { background: #16161c; width: 90%; max-width: 600px; max-height: 85vh; border-radius: 16px; border: 1px solid #333; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.8); overflow: hidden; }
+        
+        .help-header { padding: 20px 25px; border-bottom: 1px solid #2a2a30; display: flex; justify-content: space-between; align-items: center; background: #1a1a22; }
+        .help-header h2 { margin: 0; font-size: 18px; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .help-close { background: none; border: none; color: #666; font-size: 24px; cursor: pointer; transition: color 0.2s; padding: 0; line-height: 1; }
+        .help-close:hover { color: #fff; }
+
+        .help-body { padding: 25px; overflow-y: auto; color: #ccc; line-height: 1.6; font-size: 13px; }
+        .help-section { margin-bottom: 30px; }
+        .help-section h3 { color: var(--accent); font-size: 14px; margin: 0 0 12px 0; border-left: 3px solid var(--accent); padding-left: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .help-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; }
+        .help-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid transparent; transition: background 0.2s; }
+        .help-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+        .help-item strong { color: #fff; display: block; margin-bottom: 4px; font-size: 12px; }
+        
+        /* 简单编辑弹窗 */
+        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; align-items: center; justify-content: center; }
         #edit-modal.active { display: flex; }
-        .modal-card { background: #1a1a20; padding: 20px; border-radius: 12px; border: 1px solid #444; width: 220px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .modal-title { font-size: 13px; color: #00ffaa; margin-bottom: 15px; font-weight: bold; }
+        .edit-card { background: #1a1a20; padding: 20px; border-radius: 12px; border: 1px solid #444; width: 220px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .edit-title { font-size: 13px; color: var(--accent); margin-bottom: 15px; font-weight: bold; }
         #edit-input { background: #000; border: 1px solid #444; color: #fff; padding: 10px; width: 100px; text-align: center; font-size: 18px; border-radius: 6px; font-family: monospace; outline: none; }
-        #edit-input:focus { border-color: #00ffaa; }
-        .modal-btns { margin-top: 15px; display: flex; gap: 10px; }
+        #edit-input:focus { border-color: var(--accent); }
+        .edit-btns { margin-top: 15px; display: flex; gap: 10px; }
+
     </style>
 </head>
 <body>
 
-    <div id="restore-ui-btn" title="显示控制面板">⚙️ 显示面板</div>
+    <div id="restore-ui-btn" title="显示控制面板">⚙️ 参数面板</div>
 
     <div id="ui-container">
         <div class="header">
-            <div class="header-top">
-                <h1>GPU 演化引擎 <span class="gpu-badge">Unlimited</span></h1>
-                <div class="header-btns">
-                    <button id="help-btn" title="显示/隐藏说明">?</button>
-                    <button id="hide-btn" title="专注模式">_</button>
-                </div>
+            <div class="header-left">
+                <h1>演化实验室 <span class="gpu-badge">GPU</span></h1>
+                <div class="subtitle" id="gpu-name">检测中...</div>
             </div>
-            <div class="gpu-info" id="gpu-name">正在检测硬件...</div>
+            <div class="header-btns">
+                <button id="help-btn" title="使用指南 (Help)">?</button>
+                <button id="hide-btn" title="专注模式 (Focus)">_</button>
+            </div>
+        </div>
+        
+        <div class="io-group">
+            <button id="export-btn" class="io-btn">💾 导出存档</button>
+            <button id="import-btn" class="io-btn">📂 读取存档</button>
+            <input type="file" id="file-input" accept=".json">
+        </div>
+
+        <!-- 结构选择控制区 -->
+        <div class="control-group selection-group">
+            <label>结构筛选压力 (优胜劣汰) <span id="select-val" class="val-display">关闭</span></label>
+            <input type="range" id="select-slider" min="0" max="100" value="0" step="5">
         </div>
         
         <div class="control-group">
-            <label>时间倍率 (播放速度) <span id="speed-val" class="val-display">1.0x</span></label>
+            <label>时间流速 (物理不变) <span id="speed-val" class="val-display">1.0x</span></label>
             <input type="range" id="speed-slider" min="0.1" max="10.0" value="1.0" step="0.1">
-            <div class="help-box">
-                控制世界运行的快慢。<br>
-                <b>注意</b>: 高倍率下 GPU 负载会显著增加。
-            </div>
         </div>
 
         <div class="control-group">
-            <label>计算采样率 (性能优化) <span id="sample-val" class="val-display">1/1 (精准)</span></label>
+            <label>计算采样率 (性能) <span id="sample-val" class="val-display">1/1 (精准)</span></label>
             <input type="range" id="sample-slider" min="1" max="16" value="1" step="1">
-            <div class="help-box">
-                <b>解决卡顿的神器。</b><br>
-                • <b>1/1</b>: 计算所有粒子 (慢，精准)。<br>
-                • <b>1/4</b>: 只计算 25% 的粒子，性能翻 4 倍 (适合 4万+ 粒子)。<br>
-                • <b>1/8</b>: 极速模式，适合 10万 粒子。
-            </div>
         </div>
 
         <div class="control-group">
-            <label>感知半径 (视野) <span id="radius-val" class="val-display">80px</span></label>
+            <label>感知半径 (R) <span id="radius-val" class="val-display">80px</span></label>
             <input type="range" id="radius-slider" min="20" max="200" value="80" step="1">
-            <div class="help-box">
-                决定粒子能“看到”多远的邻居。<br>
-                • <b>小半径</b>: 形成细碎、紧密的结构。<br>
-                • <b>大半径</b>: 形成巨大的宏观结构，计算量略增。
-            </div>
         </div>
 
         <div class="control-group">
-            <label>粒子数量 <span id="count-val" class="val-display">16000</span></label>
+            <label>粒子总数 <span id="count-val" class="val-display">16000</span></label>
             <input type="range" id="atom-slider" min="1000" max="60000" value="16000" step="1000">
-            <div class="help-box">
-                <b>2D 数据架构</b> 已启用，突破 16k 限制。<br>
-                如果卡顿，请降低“计算采样率”。
-            </div>
         </div>
 
         <div class="control-group">
-            <!-- 上限提升至 16 -->
-            <label>物种多样性 <span id="type-val" class="val-display">6</span></label>
+            <label>物种数量 <span id="type-val" class="val-display">6</span></label>
             <input type="range" id="type-slider" min="2" max="16" value="6" step="1">
-            <div class="help-box">
-                宇宙中的元素种类数量。现在支持最多 16 种元素，复杂度指数级上升。
-            </div>
         </div>
 
         <div class="control-group">
-            <label>突变速率 <span id="drift-val" class="val-display">中</span></label>
+            <label>DNA 变异率 <span id="drift-val" class="val-display">中</span></label>
             <input type="range" id="drift-slider" min="0" max="100" value="20">
         </div>
 
         <div class="control-group">
-            <label>介质粘度 <span id="friction-val" class="val-display">0.75</span></label>
+            <label>介质摩擦力 <span id="friction-val" class="val-display">0.75</span></label>
             <input type="range" id="friction-slider" min="0.5" max="0.99" value="0.75" step="0.01">
         </div>
 
@@ -164,37 +189,95 @@
 
         <div id="matrix-container">
             <div class="matrix-title">
-                <span>相互作用矩阵 (点击色块修改)</span>
+                <span>DNA 相互作用矩阵 (点击修改)</span>
                 <span>红:斥 / 绿:引</span>
             </div>
             <canvas id="matrix-canvas" width="300" height="300"></canvas>
         </div>
         
         <div id="stats-panel">
-            <div class="stat-row">
-                <span>系统温度</span>
-                <span id="stat-temp" class="stat-val">0.00</span>
+            <div class="stat-item">温度: <b id="stat-temp">--</b></div>
+            <div class="stat-item">FPS: <b id="stat-fps">60</b></div>
+            <div class="stat-item">步进: <b id="stat-steps">--</b></div>
+            <div class="stat-item">显存: <b id="stat-mem">--</b></div>
+            <div class="status-bar running" id="status-bar">
+                <span class="dot"></span><span id="status-text">模拟运行中</span>
             </div>
-            <div class="stat-row">
-                <span>渲染帧率 (FPS)</span>
-                <span id="stat-fps" class="stat-val">60</span>
-            </div>
-            <div class="stat-row">
-                <span>GPU 物理步进</span>
-                <span id="stat-steps" class="stat-val">1/frame</span>
-            </div>
-        </div>
-
-        <div class="status-bar running" id="status-bar">
-            <span class="dot"></span><span id="status-text">模拟运行中</span>
         </div>
     </div>
     
+    <!-- 帮助手册 -->
+    <div id="help-modal">
+        <div class="help-card">
+            <div class="help-header">
+                <h2>📚 实验室操作指南</h2>
+                <button class="help-close" onclick="document.getElementById('help-modal').classList.remove('active')">×</button>
+            </div>
+            <div class="help-body">
+                <div class="help-section">
+                    <h3>🕹️ 基础操作</h3>
+                    <div class="help-grid">
+                        <div class="help-item">
+                            <strong>⏱️ 时间流速</strong>
+                            控制播放快慢。不会改变物理结果，只会让你更快看到未来，或以慢动作观察细节。
+                        </div>
+                        <div class="help-item">
+                            <strong>🧬 物种数量</strong>
+                            增加物种（颜色）会指数级增加系统的复杂度。2-3种形成追逐，8种以上形成混沌。
+                        </div>
+                        <div class="help-item">
+                            <strong>👁️ 感知半径</strong>
+                            决定了粒子能看多远。半径越小结构越细碎，半径越大结构越宏大。
+                        </div>
+                        <div class="help-item">
+                            <strong>💾 存档功能</strong>
+                            遇到喜欢的结构？点击“导出”保存为 JSON 文件，随时可以分享或读取。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>🧪 核心机制</h3>
+                    <div class="help-grid">
+                        <div class="help-item">
+                            <strong>⚔️ 结构筛选压力 (自然选择)</strong>
+                            这是上帝之手。开启后，<b>孤独的粒子会死亡</b>，而存活的粒子会不断<b>克隆</b>自己。这会让能形成稳定结构的物种迅速占领世界。
+                        </div>
+                        <div class="help-item">
+                            <strong>🎲 DNA 变异</strong>
+                            物理法则（矩阵）会随机漂移。如果你想保持当前的完美生态，请将此滑块拖到 <b>0 (停止)</b>。
+                        </div>
+                        <div class="help-item">
+                            <strong>🧱 矩阵交互</strong>
+                            下方的彩色方格图代表“谁吸引谁”。你可以<b>点击任意色块</b>，手动输入数值 (-1.0 到 1.0) 来精细设计法则。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>⚙️ 性能优化</h3>
+                    <div class="help-grid">
+                        <div class="help-item">
+                            <strong>📉 计算采样率</strong>
+                            如果你有很多粒子（>40,000）且感到卡顿，请调高此选项。
+                            <br><b>1/4</b> 表示只计算 25% 的物理量并放大 4 倍，性能翻倍且画质几乎无损。
+                        </div>
+                        <div class="help-item">
+                            <strong>💻 GPU 加速</strong>
+                            本系统完全依赖显卡。如果你使用集成显卡，建议粒子数不要超过 5,000。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数值编辑弹窗 -->
     <div id="edit-modal">
-        <div class="modal-card">
-            <div class="modal-title" id="modal-info">修改作用力</div>
+        <div class="edit-card">
+            <div class="edit-title" id="modal-info">修改作用力</div>
             <input type="number" id="edit-input" step="0.1" max="1" min="-1">
-            <div class="modal-btns">
+            <div class="edit-btns">
                 <button id="modal-cancel" class="action">取消</button>
                 <button id="modal-ok" class="action primary">确定</button>
             </div>
@@ -229,7 +312,9 @@
         uniform int u_sampleStep;
         uniform int u_frame;
         
-        // 关键更新：数组扩大到 16x16 = 256
+        uniform float u_time; 
+        uniform float u_selectionPressure; 
+        
         uniform float u_rules[256]; 
         uniform int u_numTypes;
 
@@ -237,6 +322,18 @@
 
         layout(location = 0) out vec4 outPos;
         layout(location = 1) out vec4 outVel;
+
+        float hash13(vec3 p3) {
+            p3  = fract(p3 * .1031);
+            p3 += dot(p3, p3.yzx + 33.33);
+            return fract((p3.x + p3.y) * p3.z);
+        }
+        
+        vec2 hash23(vec3 p3) {
+            p3 = fract(p3 * vec3(.1031, .1030, .0973));
+            p3 += dot(p3, p3.yzx + 33.33);
+            return fract((p3.xx+p3.yz)*p3.zy);
+        }
 
         void main() {
             ivec2 fragCoord = ivec2(gl_FragCoord.xy);
@@ -250,8 +347,10 @@
             vec2 pos = posData.xy;
             int type = int(posData.z);
             vec2 vel = velData.xy;
+            float life = velData.z; 
             
             vec2 force = vec2(0.0);
+            float neighborCount = 0.0;
 
             int startIdx = u_frame % u_sampleStep;
 
@@ -280,18 +379,56 @@
                     if (dist < R_repel) {
                         f = -2.0 * (1.0 - dist / R_repel);
                     } else {
-                        // 索引计算：type * u_numTypes + otherType
-                        // u_rules 现在足够大 (256)，支持 max 16 types
                         float g = u_rules[type * u_numTypes + otherType];
                         float distFactor = (dist - R_repel) / (u_smoothRadius - R_repel);
                         f = g * (1.0 - abs(2.0 * distFactor - 1.0));
                     }
                     
                     force += (d / dist) * f;
+                    neighborCount += 1.0; 
                 }
             }
 
-            force *= float(u_sampleStep);
+            // 采样补偿
+            float compensation = float(u_sampleStep);
+            force *= compensation;
+            neighborCount *= compensation;
+
+            // --- 结构导向的选择逻辑 ---
+            if (u_selectionPressure > 0.0) {
+                // 如果邻居很少 -> 扣血 (孤独致死)
+                // 阈值设为 2.5，有一定容错
+                if (neighborCount < 2.5) {
+                    life -= 0.005 * u_selectionPressure;
+                } else {
+                    // 如果邻居多 -> 回血 (结构保护)
+                    life += 0.02;
+                }
+                
+                life = min(life, 1.0);
+                
+                // 死亡重生 (克隆机制)
+                if (life <= 0.0) {
+                    // 从存活者中随机选择父母
+                    float seed = u_time + float(index) * 0.13;
+                    int parentIdx = int(hash13(vec3(seed, index, 1.0)) * float(u_count));
+                    
+                    ivec2 parentCoord = ivec2(parentIdx % u_texWidth, parentIdx / u_texWidth);
+                    vec4 parentPosData = texelFetch(u_texPos, parentCoord, 0);
+                    
+                    // 在父母附近重生
+                    vec2 offset = (hash23(vec3(seed, 2.0, 3.0)) - 0.5) * 40.0;
+                    pos = parentPosData.xy + offset;
+                    
+                    // 克隆父母的种类
+                    type = int(parentPosData.z);
+                    
+                    vel = vec2(0.0);
+                    life = 1.0;
+                }
+            } else {
+                life = 1.0;
+            }
 
             float adjustedFriction = pow(u_friction, u_dt);
             vel = vel * adjustedFriction + force * 0.5 * u_dt;
@@ -304,40 +441,47 @@
             if (pos.y >= u_worldSizeY) pos.y -= u_worldSizeY;
 
             outPos = vec4(pos, float(type), 1.0);
-            outVel = vec4(vel, 0.0, 1.0);
+            outVel = vec4(vel, life, 1.0);
         }
     </script>
 
     <script id="vs-render" type="x-shader/x-vertex">#version 300 es
         uniform sampler2D u_texPos;
+        uniform sampler2D u_texVel; 
         uniform vec2 u_resolution;
-        // 关键更新：颜色数组扩大
         uniform vec3 u_colors[16]; 
         uniform int u_texWidth; 
 
         out vec3 v_color;
+        out float v_life;
 
         void main() {
             int id = gl_VertexID;
             ivec2 coord = ivec2(id % u_texWidth, id / u_texWidth);
             
             vec4 posData = texelFetch(u_texPos, coord, 0);
+            vec4 velData = texelFetch(u_texVel, coord, 0);
+            
             vec2 pos = posData.xy;
             int type = int(posData.z);
+            float life = velData.z; 
             
             vec2 clipPos = (pos / u_resolution) * 2.0 - 1.0;
             clipPos.y *= -1.0; 
 
             gl_Position = vec4(clipPos, 0.0, 1.0);
-            gl_PointSize = 3.0;
+            float size = mix(0.0, 3.0, life);
+            gl_PointSize = size; 
             
             v_color = u_colors[type];
+            v_life = life;
         }
     </script>
 
     <script id="fs-render" type="x-shader/x-fragment">#version 300 es
         precision mediump float;
         in vec3 v_color;
+        in float v_life;
         out vec4 fragColor;
 
         void main() {
@@ -346,6 +490,7 @@
             if (r > 1.0) discard;
             
             float alpha = 1.0 - smoothstep(0.5, 1.0, r);
+            alpha *= v_life;
             fragColor = vec4(v_color, alpha); 
         }
     </script>
@@ -373,7 +518,7 @@
             const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
             if (debugInfo) {
                 const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                document.getElementById('gpu-name').innerHTML = "硬件: <span>" + renderer + "</span>";
+                document.getElementById('gpu-name').innerText = renderer;
                 const lowPerf = /intel|uhd|iris|hd graphics/i.test(renderer);
                 if (lowPerf) return 4000;
             }
@@ -383,7 +528,6 @@
         
         let numParticles = Math.min(defaultParticles, 60000); 
         let numTypes = 6;
-        // 关键更新：JS 端规则数组扩容 (16*16)
         let rules = new Float32Array(256); 
         let colors = [];
         const FIXED_DT = 1.0; 
@@ -395,15 +539,17 @@
             width: window.innerWidth,
             height: window.innerHeight,
             sampleStep: 1,
-            smoothRadius: 80.0
+            smoothRadius: 80.0,
+            selectionPressure: 0.0 
         };
         
         let isPaused = false;
         let timeAccumulator = 0; 
         let frameCount = 0; 
 
-        document.getElementById('atom-slider').max = 60000; 
-        document.getElementById('atom-slider').value = numParticles;
+        const elAtom = document.getElementById('atom-slider');
+        elAtom.max = 60000;
+        elAtom.value = numParticles;
         document.getElementById('count-val').innerText = numParticles;
 
         function createShader(gl, type, source) {
@@ -477,7 +623,12 @@
                 posData[i*4 + 2] = Math.floor(Math.random() * numTypes);
                 velData[i*4 + 0] = 0;
                 velData[i*4 + 1] = 0;
+                velData[i*4 + 2] = 1.0; 
             }
+            uploadData(posData, velData);
+        }
+
+        function uploadData(posData, velData) {
             for (let i = 0; i < 2; i++) {
                 gl.bindTexture(gl.TEXTURE_2D, textures[i].pos);
                 gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, DATA_WIDTH, DATA_HEIGHT, gl.RGBA, gl.FLOAT, posData);
@@ -486,42 +637,29 @@
             }
         }
 
-        // 关键更新：支持任意数量颜色的生成 (HSL)
         function generateColors() {
             colors = [];
             for (let i = 0; i < numTypes; i++) {
-                // 使用 HSL 确保色彩分布均匀
-                // H: 0-360, S: 100%, L: 60%
                 let hue = (i / numTypes) * 360;
                 let s = 1.0;
                 let l = 0.6;
-                
                 let c = (1 - Math.abs(2 * l - 1)) * s;
                 let x = c * (1 - Math.abs((hue / 60) % 2 - 1));
                 let m = l - c / 2;
-                
                 let r = 0, g = 0, b = 0;
-                
                 if (0 <= hue && hue < 60) { r = c; g = x; b = 0; }
                 else if (60 <= hue && hue < 120) { r = x; g = c; b = 0; }
                 else if (120 <= hue && hue < 180) { r = 0; g = c; b = x; }
                 else if (180 <= hue && hue < 240) { r = 0; g = x; b = c; }
                 else if (240 <= hue && hue < 300) { r = x; g = 0; b = c; }
                 else if (300 <= hue && hue < 360) { r = c; g = 0; b = x; }
-                
                 colors.push(r + m, g + m, b + m);
             }
-            
-            // 填充剩余空位以满足 shader 数组大小要求 (16)
-            for (let i = numTypes; i < 16; i++) {
-                colors.push(0, 0, 0);
-            }
+            for (let i = numTypes; i < 16; i++) colors.push(0, 0, 0);
         }
 
         function randomizeRules() {
-            // 清空旧规则
             rules.fill(0);
-            // 填充有效区域
             for (let i = 0; i < numTypes; i++) {
                 for (let j = 0; j < numTypes; j++) {
                     rules[i * numTypes + j] = Math.random() * 2.0 - 1.0;
@@ -535,13 +673,10 @@
             const i = Math.floor(Math.random() * numTypes);
             const j = Math.floor(Math.random() * numTypes);
             const drift = (Math.random() * 0.2 - 0.1) * (params.drift / 10.0);
-            
             let idx = i * numTypes + j;
             let val = rules[idx] + drift;
-            
             if (val > 1) val = 1; if (val < -1) val = -1;
             rules[idx] = val;
-            
             if (Math.random() < 0.1) drawMatrix();
         }
 
@@ -558,10 +693,8 @@
             const padding = 20;
             const cw = (w - padding) / numTypes;
             const ch = (h - padding) / numTypes;
-            
             mCtx.fillStyle = '#111';
             mCtx.fillRect(0,0,w,h);
-            
             mCtx.font = "bold 10px monospace";
             mCtx.textAlign = "center";
             mCtx.textBaseline = "middle";
@@ -571,7 +704,6 @@
                 const cb = colors[i * 3 + 1] * 255;
                 const cc = colors[i * 3 + 2] * 255;
                 const colorStr = `rgb(${ca},${cb},${cc})`;
-                
                 mCtx.fillStyle = colorStr;
                 mCtx.beginPath();
                 mCtx.arc(padding/2, padding + i*ch + ch/2, 4, 0, Math.PI*2);
@@ -584,17 +716,13 @@
                     let v = rules[i*numTypes+j];
                     let r = v < 0 ? Math.floor(-v*200) : 0;
                     let g = v > 0 ? Math.floor(v*200) : 0;
-                    
                     const x = padding + j*cw;
                     const y = padding + i*ch;
-                    
                     mCtx.fillStyle = `rgb(${r},${g},40)`;
                     mCtx.fillRect(x, y, cw, ch);
                     mCtx.strokeStyle = '#222';
                     mCtx.lineWidth = 1;
                     mCtx.strokeRect(x, y, cw, ch);
-                    
-                    // 仅当格子够大时才显示数字
                     if (cw > 20) {
                         mCtx.fillStyle = 'rgba(255,255,255,0.8)';
                         mCtx.shadowColor = 'black';
@@ -613,20 +741,15 @@
             const x = (e.clientX - rect.left) * scaleX;
             const y = (e.clientY - rect.top) * scaleY;
             const padding = 20;
-            
             if (x < padding || y < padding) return;
-
             const c = Math.floor((x - padding) / ((matrixCanvas.width - padding) / numTypes));
             const r = Math.floor((y - padding) / ((matrixCanvas.height - padding) / numTypes));
-            
             if(r >= 0 && r < numTypes && c >= 0 && c < numTypes) {
                 editTarget = {r, c};
                 editInput.value = rules[r*numTypes+c].toFixed(2);
-                
                 const colName1 = `粒子${r+1}`;
                 const colName2 = `粒子${c+1}`;
                 editInfo.innerHTML = `修改作用力<br><span style="font-size:11px;color:#aaa">${colName1} 对 ${colName2}</span>`;
-                
                 editModal.classList.add('active');
                 editInput.focus();
                 if (!isPaused) document.getElementById('pause-btn').click();
@@ -658,23 +781,18 @@
         
         function runPhysicsStep() {
             evolveRules();
-
             const writeIdx = 1 - readIdx;
             const readTex = textures[readIdx];
             const writeTex = textures[writeIdx];
-
             gl.useProgram(physicsProgram);
             gl.bindFramebuffer(gl.FRAMEBUFFER, writeTex.fb);
             gl.viewport(0, 0, DATA_WIDTH, DATA_HEIGHT);
-
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, readTex.pos);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texPos"), 0);
-
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, readTex.vel);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texVel"), 1);
-
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_texWidth"), DATA_WIDTH); 
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_count"), numParticles);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_dt"), FIXED_DT); 
@@ -682,19 +800,19 @@
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeX"), params.width);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_worldSizeY"), params.height);
             gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_smoothRadius"), params.smoothRadius);
-            
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_sampleStep"), params.sampleStep);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_frame"), frameCount);
             
+            gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_time"), performance.now() / 1000.0);
+            gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_selectionPressure"), params.selectionPressure);
+            
             gl.uniform1fv(gl.getUniformLocation(physicsProgram, "u_rules"), rules);
             gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_numTypes"), numTypes);
-
             gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
             const locPos = gl.getAttribLocation(physicsProgram, "a_position");
             gl.enableVertexAttribArray(locPos);
             gl.vertexAttribPointer(locPos, 2, gl.FLOAT, false, 0, 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
-            
             readIdx = writeIdx;
         }
 
@@ -703,21 +821,18 @@
             gl.viewport(0, 0, canvas.width, canvas.height);
             gl.clearColor(0.02, 0.02, 0.02, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
-
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE); 
-
             gl.useProgram(renderProgram);
-            
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, textures[readIdx].pos);
             gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texPos"), 0);
-            
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, textures[readIdx].vel); 
+            gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texVel"), 1);
             gl.uniform1i(gl.getUniformLocation(renderProgram, "u_texWidth"), DATA_WIDTH); 
             gl.uniform2f(gl.getUniformLocation(renderProgram, "u_resolution"), params.width, params.height);
-            // 传入完整的颜色数组
             gl.uniform3fv(gl.getUniformLocation(renderProgram, "u_colors"), new Float32Array(colors));
-
             gl.drawArrays(gl.POINTS, 0, numParticles);
             gl.disable(gl.BLEND);
         }
@@ -725,11 +840,9 @@
         function step() {
             let stepsPerFrame = 0;
             frameCount++; 
-            
             if (!isPaused) {
                 timeAccumulator += params.timeScale;
                 const MAX_STEPS = 10;
-                
                 while (timeAccumulator >= 1.0 && stepsPerFrame < MAX_STEPS) {
                     runPhysicsStep();
                     timeAccumulator -= 1.0;
@@ -737,10 +850,111 @@
                 }
                 if (timeAccumulator > 2.0) timeAccumulator = 0;
             }
-
             render();
             updateStats(stepsPerFrame);
             requestAnimationFrame(step);
+        }
+
+        // --- Export / Import ---
+        document.getElementById('export-btn').onclick = () => {
+            if (!isPaused) document.getElementById('pause-btn').click();
+            const fbo = textures[readIdx].fb;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            const rawPos = new Float32Array(DATA_WIDTH * DATA_HEIGHT * 4);
+            const rawVel = new Float32Array(DATA_WIDTH * DATA_HEIGHT * 4);
+            gl.readBuffer(gl.COLOR_ATTACHMENT0);
+            gl.readPixels(0, 0, DATA_WIDTH, DATA_HEIGHT, gl.RGBA, gl.FLOAT, rawPos);
+            gl.readBuffer(gl.COLOR_ATTACHMENT1);
+            gl.readPixels(0, 0, DATA_WIDTH, DATA_HEIGHT, gl.RGBA, gl.FLOAT, rawVel);
+            const saveData = {
+                version: 1,
+                timestamp: Date.now(),
+                params: {
+                    numParticles, numTypes,
+                    timeScale: params.timeScale,
+                    friction: params.friction,
+                    drift: params.drift,
+                    smoothRadius: params.smoothRadius,
+                    sampleStep: params.sampleStep,
+                    selectionPressure: params.selectionPressure,
+                    worldSize: { w: params.width, h: params.height }
+                },
+                rules: Array.from(rules),
+                colors: colors,
+                particles: {
+                    pos: Array.from(rawPos.slice(0, numParticles * 4)),
+                    vel: Array.from(rawVel.slice(0, numParticles * 4))
+                }
+            };
+            const blob = new Blob([JSON.stringify(saveData)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `universe_${saveData.timestamp}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        document.getElementById('import-btn').onclick = () => {
+            document.getElementById('file-input').click();
+        };
+
+        document.getElementById('file-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    loadUniverse(data);
+                } catch (err) {
+                    alert("存档文件损坏！");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        };
+
+        function loadUniverse(data) {
+            if (!isPaused) document.getElementById('pause-btn').click();
+            const p = data.params;
+            numParticles = p.numParticles;
+            numTypes = p.numTypes;
+            params.timeScale = p.timeScale;
+            params.friction = p.friction;
+            params.drift = p.drift;
+            params.smoothRadius = p.smoothRadius || 80.0;
+            params.sampleStep = p.sampleStep || 1;
+            params.selectionPressure = p.selectionPressure || 0.0;
+
+            rules.set(data.rules);
+            colors = data.colors;
+
+            document.getElementById('atom-slider').value = numParticles;
+            document.getElementById('count-val').innerText = numParticles;
+            document.getElementById('type-slider').value = numTypes;
+            document.getElementById('type-val').innerText = numTypes;
+            document.getElementById('speed-slider').value = params.timeScale;
+            document.getElementById('speed-val').innerText = params.timeScale.toFixed(1) + "x";
+            document.getElementById('drift-slider').value = params.drift;
+            document.getElementById('drift-val').innerText = params.drift > 0 ? "开启" : "停止";
+            document.getElementById('friction-slider').value = params.friction;
+            document.getElementById('friction-val').innerText = params.friction;
+            document.getElementById('sample-slider').value = params.sampleStep;
+            document.getElementById('sample-val').innerText = "1/" + params.sampleStep;
+            document.getElementById('radius-slider').value = params.smoothRadius;
+            document.getElementById('radius-val').innerText = params.smoothRadius + "px";
+            document.getElementById('select-slider').value = params.selectionPressure * 10.0;
+            updateSelectLabel();
+
+            const posData = new Float32Array(MAX_CAPACITY * 4);
+            const velData = new Float32Array(MAX_CAPACITY * 4);
+            posData.set(data.particles.pos);
+            velData.set(data.particles.vel);
+            uploadData(posData, velData);
+            drawMatrix();
+            alert("宇宙加载成功！");
         }
 
         // --- UI ---
@@ -757,6 +971,18 @@
         document.getElementById('radius-slider').oninput = function() {
             params.smoothRadius = parseFloat(this.value);
             elRadius.innerText = params.smoothRadius + "px";
+        };
+
+        const elSelect = document.getElementById('select-val');
+        function updateSelectLabel() {
+            if (params.selectionPressure === 0) elSelect.innerText = "关闭";
+            else if (params.selectionPressure < 2.0) elSelect.innerText = "温和";
+            else if (params.selectionPressure < 5.0) elSelect.innerText = "强力";
+            else elSelect.innerText = "残酷";
+        }
+        document.getElementById('select-slider').oninput = function() {
+            params.selectionPressure = parseFloat(this.value) / 10.0;
+            updateSelectLabel();
         };
 
         document.getElementById('atom-slider').oninput = function() {
@@ -824,7 +1050,7 @@
         };
         
         document.getElementById('help-btn').onclick = () => {
-            uiContainer.classList.toggle('show-help');
+            document.getElementById('help-modal').classList.add('active');
         };
 
         let lastTime = 0;
@@ -832,16 +1058,18 @@
         const elFps = document.getElementById('stat-fps');
         const elSteps = document.getElementById('stat-steps');
         const elTemp = document.getElementById('stat-temp');
+        const elMem = document.getElementById('stat-mem');
         
         function updateStats(steps) {
             frames++;
             const now = performance.now();
             if (now - lastTime >= 1000) {
                 elFps.innerText = frames;
-                elSteps.innerText = steps + "/frame";
+                elSteps.innerText = steps + "/F";
                 let avgRule = 0;
                 for(let i=0; i<64; i++) avgRule += Math.abs(rules[i]);
                 elTemp.innerText = (avgRule / (numTypes*numTypes) * 10).toFixed(2); 
+                elMem.innerText = (numParticles * 32 / 1024 / 1024).toFixed(1) + "MB";
                 frames = 0;
                 lastTime = now;
             }
