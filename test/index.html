@@ -397,9 +397,9 @@
             stage: 'idle'
         };
 
-        // 标准化分辨率目标：1080p (1920x1080) 的像素总数
-        // 这确保手机和电脑渲染相同数量的像素，评分才公平
-        const TARGET_PIXEL_COUNT = 1920 * 1080; 
+        // 标准化分辨率目标：从1080p提升至 2K (2560x1440)
+        // 增加像素填充压力，迫使设备从“跑分上限(刷新率)”测试转变为“真实算力”测试
+        const TARGET_PIXEL_COUNT = 2560 * 1440; 
 
         // === 硬件信息侦测 ===
         function detectHardware() {
@@ -573,7 +573,7 @@
             updateScore('mem', state.scores.mem);
         }
 
-        // === 3. GPU 测试逻辑 (核心修改：统一负载 + 自适应相机) ===
+        // === 3. GPU 测试逻辑 (核心修改：统一负载 + 自适应相机 + 显卡杀手) ===
         let renderer, scene, camera, mesh, particles;
         let gpuRunning = false;
         let gpuFrameCount = 0;
@@ -595,7 +595,7 @@
 
             // setSize(width, height, updateStyle)
             // 第三个参数 false 非常重要！
-            // 这意味着 Canvas 内部 Buffer 是标准化的 200万像素，但 CSS 仍然撑满屏幕
+            // 这意味着 Canvas 内部 Buffer 是标准化的，不依赖设备DPR
             renderer.setSize(Math.floor(targetWidth), Math.floor(targetHeight), false);
 
             // 2. 自适应相机逻辑 (解决手机显示不全)
@@ -633,8 +633,9 @@
             // 监听窗口变化
             window.addEventListener('resize', updateRenderSize);
 
-            // 场景内容
-            const geo = new THREE.TorusKnotGeometry(10, 3, 200, 50); 
+            // 场景内容 - 增加复杂度
+            // 增加 Segments 数量 (800, 200) 显著提高顶点处理压力
+            const geo = new THREE.TorusKnotGeometry(10, 3, 800, 200); 
             const mat = new THREE.MeshStandardMaterial({ 
                 color: 0x00f3ff, roughness: 0.2, metalness: 0.8, 
                 emissive: 0x111111 
@@ -642,14 +643,24 @@
             mesh = new THREE.Mesh(geo, mat);
             scene.add(mesh);
 
+            // 粒子系统 - 增加到 30000 并开启透明度
             const pGeo = new THREE.BufferGeometry();
-            const pCount = 5000; // 统一粒子数
+            const pCount = 30000; // 数量激增：5000 -> 30000
             const posArray = new Float32Array(pCount * 3);
             for(let i=0; i<pCount*3; i++) {
                 posArray[i] = (Math.random() - 0.5) * 200;
             }
             pGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const pMat = new THREE.PointsMaterial({ size: 0.8, color: 0xffffff });
+            
+            // 关键修改：开启透明 (transparent: true) 和关闭深度写入 (depthWrite: false)
+            // 这会导致大量的 Overdraw（过度绘制），对移动端 GPU (Tile-based) 是极大杀伤，对电脑显卡相对友好
+            const pMat = new THREE.PointsMaterial({ 
+                size: 0.8, 
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.6,
+                depthWrite: false 
+            });
             particles = new THREE.Points(pGeo, pMat);
             scene.add(particles);
 
@@ -677,7 +688,7 @@
         async function runGPUTest() {
             activateCard('card-gpu');
             document.getElementById('canvas-container').style.opacity = 1;
-            setStatus("GPU 图形测试 (标准1080p负载)", "动态光照 / 粒子 / 统一渲染分辨率", 55);
+            setStatus("GPU 图形测试 (2K基准+透明混合)", "粒子重叠 / 深度计算 / 顶点压力", 55);
 
             init3D();
             gpuRunning = true;
@@ -709,14 +720,11 @@
             window.removeEventListener('resize', updateRenderSize); // 清理
             document.getElementById('canvas-container').style.opacity = 0.2;
 
-            // 评分逻辑简化：
-            // 因为所有设备现在都渲染相同的像素量 (TARGET_PIXEL_COUNT)，
-            // 所以不再需要 pixelFactor。FPS 直接代表性能。
+            // 评分逻辑调整：
             const fps = gpuFrameCount / (duration / 1000);
             
-            // 调整系数，使 60fps 对应一个不错的分数
-            // 例如 60fps * 200 = 12000 分
-            state.scores.gpu = Math.floor(fps * 200);
+            // 系数调整：由于压力显著增大，需要提高每帧的分数权重
+            state.scores.gpu = Math.floor(fps * 300);
             updateScore('gpu', state.scores.gpu);
         }
 
@@ -761,10 +769,11 @@
             let beat = 10;
             let color = "#aaa";
 
-            if (score > 5000) { rank = "家用级"; beat = 40; color = "#00ff88"; }
-            if (score > 10000) { rank = "高性能"; beat = 70; color = "#00f3ff"; }
-            if (score > 20000) { rank = "旗舰级"; beat = 95; color = "#ff0055"; }
-            if (score > 30000) { rank = "传说级"; beat = 99; color = "gold"; }
+            // 分数段调整以适应更高的压力
+            if (score > 6000) { rank = "家用级"; beat = 40; color = "#00ff88"; }
+            if (score > 12000) { rank = "高性能"; beat = 70; color = "#00f3ff"; }
+            if (score > 24000) { rank = "旗舰级"; beat = 95; color = "#ff0055"; }
+            if (score > 35000) { rank = "传说级"; beat = 99; color = "gold"; }
 
             setStatus(`测试完成`, `设备评级: ${rank}`, 100);
             document.getElementById('status-text').style.color = color;
