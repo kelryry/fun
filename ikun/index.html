@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>坤语言 (KunLang) 编译器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #1a1a1a;
+            color: #e5e5e5;
+        }
+        
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888; 
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        .kun-glow {
+            text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- 顶部导航栏 -->
+    <header class="bg-black border-b border-gray-700 p-4 flex justify-between items-center shrink-0 h-16">
+        <div class="flex items-center space-x-3">
+            <div class="text-3xl">🏀</div>
+            <h1 class="text-xl font-bold text-white tracking-wider">KunLang <span class="text-yellow-400">IDE</span> v2.5</h1>
+        </div>
+        <div class="flex space-x-2">
+            <button onclick="clearConsole()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors text-sm font-bold">
+                清空舞台 (Clear)
+            </button>
+            <button onclick="runKunCode()" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded transition-colors font-bold shadow-lg flex items-center gap-2">
+                <span>▶</span> 开始唱跳 (Run)
+            </button>
+        </div>
+    </header>
+
+    <!-- 主体区域 -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- 代码编辑区 -->
+        <section class="flex-1 flex flex-col border-r border-gray-700 min-w-0">
+            <div class="bg-gray-800 px-4 py-2 text-xs text-gray-400 font-mono border-b border-gray-700 flex justify-between">
+                <span>SOURCE_CODE.kun</span>
+                <span>UTF-8</span>
+            </div>
+            <textarea id="editor" class="flex-1 bg-[#1e1e1e] text-gray-300 p-4 code-font text-sm md:text-base outline-none resize-none leading-relaxed" spellcheck="false" placeholder="请开始你的表演...">
+鸡你太美
+    哎哟 这是一个坤语言 FizzBuzz 演示
+    
+    练习生 i 穿背带裤 1
+    
+    练习时长 (i 不如...美 21) 中分
+        
+        食不食油饼 (i Music 15 像极了 0) 中分
+            大声喊出("鸡你太美 (FizzBuzz)")
+        背带裤
+        或者是油饼 (i Music 3 像极了 0) 中分
+            大声喊出("鸡 (Fizz)")
+        背带裤
+        或者是油饼 (i Music 5 像极了 0) 中分
+            大声喊出("太美 (Buzz)")
+        背带裤
+        你干嘛 中分
+            大声喊出(i)
+        背带裤
+        
+        i 穿背带裤 i 唱 1
+    背带裤
+
+    大声喊出("----------------")
+    大声喊出("表演结束，谢谢大家！")
+    
+律师函警告
+</textarea>
+        </section>
+
+        <!-- 结果输出区 -->
+        <section class="flex-1 flex flex-col bg-black min-w-0 md:w-1/3">
+            <div class="bg-gray-900 px-4 py-2 text-xs text-yellow-500 font-mono border-b border-gray-700 flex justify-between">
+                <span>CONSOLE OUTPUT</span>
+                <span id="status" class="text-green-500">READY</span>
+            </div>
+            <div id="console-output" class="flex-1 p-4 code-font text-sm overflow-auto text-green-400 font-bold whitespace-pre-wrap"></div>
+        </section>
+
+    </main>
+
+    <script>
+        // 核心编译器逻辑
+        const kunToJs = (code) => {
+            let jsCode = code;
+
+            // 1. 保护字符串内容 (防止关键字替换误伤字符串内部)
+            const stringLiterals = [];
+            jsCode = jsCode.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, (match) => {
+                stringLiterals.push(match);
+                return `__STR_${stringLiterals.length - 1}__`;
+            });
+
+            // 2. 预处理注释
+            // 多行注释: 这里是绿尸寒 ... 结束绿尸寒 -> /* ... */
+            jsCode = jsCode.replace(/这里是绿尸寒([\s\S]*?)结束绿尸寒/g, "/* $1 */");
+            // 单行注释: 哎哟 -> //
+            jsCode = jsCode.replace(/哎哟/g, "//");
+
+            // 3. 结构与关键字替换
+            // 注意：正则顺序很重要，先长后短，避免部分匹配
+            const replacements = [
+                // 结构
+                { kun: /鸡你太美/g, js: "/* Program Start */ (async function() {" },
+                { kun: /律师函警告/g, js: "})(); /* Program End */" },
+                
+                // 修复：必须先替换 '穿背带裤' (=)，否则会被下面的 '背带裤' (}) 先替换掉变成 '穿}'
+                { kun: /穿背带裤/g, js: "=" },
+
+                { kun: /中分/g, js: "{" },
+                { kun: /背带裤/g, js: "}" },
+                { kun: /铁山靠/g, js: ";" },
+                
+                // 变量与赋值
+                { kun: /练习生\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g, js: "let $1" }, // var decl
+                
+                // 控制流
+                { kun: /食不食油饼/g, js: "if" },
+                { kun: /或者是油饼/g, js: "else if" },
+                { kun: /你干嘛/g, js: "else" },
+                { kun: /练习时长/g, js: "while" },
+                { kun: /出道两年半/g, js: "for" },
+                { kun: /切歌/g, js: "break" },
+                { kun: /再来一遍/g, js: "continue" },
+                { kun: /尝试/g, js: "try" },
+                { kun: /捕捉/g, js: "catch" },
+
+                // 函数
+                { kun: /才艺展示/g, js: "function" },
+                { kun: /下台/g, js: "return" },
+
+                // I/O
+                { kun: /大声喊出/g, js: "_kun_print" },
+                { kun: /听我说/g, js: "prompt" },
+
+                // 运算符 (注意转义)
+                { kun: /像极了/g, js: "===" },
+                { kun: /比\.\.\.秀/g, js: ">" },
+                { kun: /不如\.\.\.美/g, js: "<" },
+                { kun: /唱/g, js: "+" },
+                { kun: /跳/g, js: "-" },
+                { kun: /Rap/g, js: "*" }, // Rap 必须在 Music 之前如果这里有包含关系，但这里没有
+                { kun: /篮球/g, js: "/" },
+                { kun: /Music/g, js: "%" },
+
+                // 值
+                { kun: /真爱粉/g, js: "true" },
+                { kun: /小黑子/g, js: "false" },
+                { kun: /空气/g, js: "null" },
+                { kun: /只因/g, js: "Infinity" },
+                { kun: /WaitWaitWait/g, js: "error" } // Catch block variable
+            ];
+
+            replacements.forEach(rule => {
+                jsCode = jsCode.replace(rule.kun, rule.js);
+            });
+
+            // 4. 恢复字符串
+            jsCode = jsCode.replace(/__STR_(\d+)__/g, (match, index) => {
+                return stringLiterals[index];
+            });
+
+            return jsCode;
+        };
+
+        // 获取 DOM 元素
+        const editor = document.getElementById('editor');
+        const output = document.getElementById('console-output');
+        const status = document.getElementById('status');
+
+        // 自定义打印函数
+        function _kun_print(...args) {
+            const text = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+            ).join(' ');
+            
+            const line = document.createElement('div');
+            line.textContent = "> " + text;
+            line.className = "mb-1 border-l-2 border-yellow-600 pl-2 hover:bg-gray-900";
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // 清空控制台
+        function clearConsole() {
+            output.innerHTML = '';
+            status.textContent = 'READY';
+            status.className = 'text-green-500';
+        }
+
+        // 运行代码
+        async function runKunCode() {
+            clearConsole();
+            status.textContent = 'RUNNING...';
+            status.className = 'text-yellow-500';
+
+            const sourceCode = editor.value;
+            
+            try {
+                // 转译
+                const jsCode = kunToJs(sourceCode);
+                
+                // 可以在控制台查看转译后的 JS 代码，方便调试
+                console.log("Transpiled JS:\n", jsCode);
+
+                // 执行
+                // 使用 new Function 创建一个隔离的作用域，但仍能访问 _kun_print
+                // 包装在一个异步函数中以支持可能的异步操作
+                const run = new Function('_kun_print', jsCode);
+                
+                await run(_kun_print);
+
+                status.textContent = 'FINISHED';
+                status.className = 'text-green-500';
+
+            } catch (e) {
+                status.textContent = 'WaitWaitWait';
+                status.className = 'text-red-500';
+                
+                const errorLine = document.createElement('div');
+                errorLine.textContent = `❌ 律师函警告 (Runtime Error): ${e.message}`;
+                errorLine.className = "text-red-500 font-bold mt-2 p-2 bg-red-900/20 border border-red-500 rounded";
+                output.appendChild(errorLine);
+            }
+        }
+
+        // 简单的按 Tab 输入缩进
+        editor.addEventListener('keydown', function(e) {
+            if (e.key == 'Tab') {
+                e.preventDefault();
+                var start = this.selectionStart;
+                var end = this.selectionEnd;
+
+                // set textarea value to: text before caret + tab + text after caret
+                this.value = this.value.substring(0, start) +
+                    "    " + this.value.substring(end);
+
+                // put caret at right position again
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+    </script>
+</body>
+</html>
