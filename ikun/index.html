@@ -3,181 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>坤语言 (KunLang) 编译器</title>
+    <title>KunLang Studio Code</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&family=JetBrains+Mono:wght@400;500;700&display=swap');
         
+        :root {
+            --bg-activity: #333333;
+            --bg-sidebar: #252526;
+            --bg-editor: #1e1e1e;
+            --bg-status: #007acc;
+            --border-color: #3e3e42;
+            --text-main: #cccccc;
+            --highlight: #007fd4;
+            --kun-gold: #ffd700;
+        }
+
         body {
             font-family: 'Noto Sans SC', sans-serif;
-            background-color: #1a1a1a;
-            color: #e5e5e5;
+            background-color: var(--bg-editor);
+            color: var(--text-main);
+            overflow: hidden;
+            user-select: none; /* UI 区域不可选，更像 App */
         }
         
-        .code-font {
+        .code-area {
             font-family: 'JetBrains Mono', monospace;
+            line-height: 1.5;
+            user-select: text; /* 代码区域可选 */
         }
 
-        /* 滚动条样式 */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #2d2d2d; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888; 
-            border-radius: 5px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555; 
-        }
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #424242; border-radius: 5px; border: 2px solid var(--bg-editor); }
+        ::-webkit-scrollbar-thumb:hover { background: #4f4f4f; }
 
-        .kun-glow {
-            text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        /* 语法高亮模拟 */
+        .token-keyword { color: #569cd6; font-weight: bold; }
+        .token-string { color: #ce9178; }
+        .token-function { color: #dcdcaa; }
+        .token-comment { color: #6a9955; }
+        
+        /* 错误抖动 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            15%, 45%, 75% { transform: translateX(-4px); }
+            30%, 60%, 90% { transform: translateX(4px); }
         }
+        .shake-window { animation: shake 0.4s ease-in-out; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="h-screen flex flex-col text-sm">
 
-    <!-- 顶部导航栏 -->
-    <header class="bg-black border-b border-gray-700 p-4 flex justify-between items-center shrink-0 h-16">
-        <div class="flex items-center space-x-3">
-            <div class="text-3xl">🏀</div>
-            <h1 class="text-xl font-bold text-white tracking-wider">KunLang <span class="text-yellow-400">IDE</span> v2.5</h1>
+    <!-- 1. 顶部菜单栏 -->
+    <div class="h-8 bg-[#323233] flex items-center px-2 shrink-0 space-x-2 text-[13px] text-gray-300">
+        <img src="https://cdn-icons-png.flaticon.com/512/5968/5968292.png" class="w-4 h-4 mr-2 filter grayscale brightness-150" alt="icon">
+        <span class="hover:bg-[#454545] px-2 py-0.5 rounded cursor-pointer">File</span>
+        <span class="hover:bg-[#454545] px-2 py-0.5 rounded cursor-pointer">Edit</span>
+        <span class="hover:bg-[#454545] px-2 py-0.5 rounded cursor-pointer">Selection</span>
+        <span class="hover:bg-[#454545] px-2 py-0.5 rounded cursor-pointer">View</span>
+        <span class="hover:bg-[#454545] px-2 py-0.5 rounded cursor-pointer">Go</span>
+        <span class="hover:bg-[#454545] px-2 py-0.5 rounded cursor-pointer">Run</span>
+        <div class="ml-auto flex items-center space-x-3 text-gray-400">
+            <span class="hover:text-white cursor-pointer">📂 Open Folder</span>
+            <span class="border-l border-gray-600 h-3"></span>
+            <span>KunLang Studio</span>
         </div>
-        <div class="flex space-x-2">
-            <button onclick="clearConsole()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors text-sm font-bold">
-                清空舞台 (Clear)
-            </button>
-            <button onclick="runKunCode()" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded transition-colors font-bold shadow-lg flex items-center gap-2">
-                <span>▶</span> 开始唱跳 (Run)
-            </button>
-        </div>
-    </header>
+    </div>
 
-    <!-- 主体区域 -->
-    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <!-- 2. 主体工作区 -->
+    <div class="flex-1 flex overflow-hidden">
         
-        <!-- 代码编辑区 -->
-        <section class="flex-1 flex flex-col border-r border-gray-700 min-w-0">
-            <div class="bg-gray-800 px-4 py-2 text-xs text-gray-400 font-mono border-b border-gray-700 flex justify-between">
-                <span>SOURCE_CODE.kun</span>
-                <span>UTF-8</span>
+        <!-- (A) 活动栏 (最左侧图标) -->
+        <div class="w-12 bg-[#333333] flex flex-col items-center py-2 shrink-0 z-10">
+            <div class="w-12 h-12 flex items-center justify-center border-l-2 border-white cursor-pointer hover:text-white text-white opacity-100" title="Explorer (Ctrl+Shift+E)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
             </div>
-            <textarea id="editor" class="flex-1 bg-[#1e1e1e] text-gray-300 p-4 code-font text-sm md:text-base outline-none resize-none leading-relaxed" spellcheck="false" placeholder="请开始你的表演...">
-鸡你太美
-    哎哟 这是一个坤语言 FizzBuzz 演示
+            <div class="w-12 h-12 flex items-center justify-center border-l-2 border-transparent cursor-pointer text-gray-400 hover:text-white" title="Search">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <div class="w-12 h-12 flex items-center justify-center border-l-2 border-transparent cursor-pointer text-gray-400 hover:text-white" title="Source Control (Git)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"></path></svg>
+            </div>
+            <div class="w-12 h-12 flex items-center justify-center border-l-2 border-transparent cursor-pointer text-gray-400 hover:text-white" title="Run and Debug">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="w-12 h-12 flex items-center justify-center border-l-2 border-transparent cursor-pointer text-gray-400 hover:text-white" title="Extensions">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            </div>
+            <div class="mt-auto w-12 h-12 flex items-center justify-center cursor-pointer text-gray-400 hover:text-white" title="Manage">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </div>
+        </div>
+
+        <!-- (B) 侧边栏 (Explorer) -->
+        <div class="w-60 bg-[#252526] flex flex-col border-r border-[#3e3e42] shrink-0 hidden md:flex">
+            <div class="h-9 px-4 flex items-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">Explorer</div>
+            
+            <!-- 文件夹 -->
+            <div class="px-2 py-1 cursor-pointer hover:bg-[#37373d] text-gray-300 font-bold flex items-center group">
+                <svg class="w-4 h-4 mr-1 text-gray-500 transform rotate-90 transition-transform group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                CHICKEN_PROJECT
+            </div>
+            
+            <!-- 文件列表 -->
+            <div class="flex flex-col text-[13px] text-gray-300 font-sans">
+                <div class="pl-6 py-1 bg-[#37373d] flex items-center border-l-2 border-[#eab308] cursor-pointer">
+                    <span class="mr-2 text-yellow-400 text-lg">JS</span>
+                    <span class="text-yellow-100">main.kun</span>
+                </div>
+                <div class="pl-6 py-1 hover:bg-[#2a2d2e] cursor-pointer flex items-center text-gray-500 hover:text-gray-300">
+                    <span class="mr-2 text-red-400 opacity-60">⚖️</span>
+                    lawyer_letter.pdf
+                </div>
+                <div class="pl-6 py-1 hover:bg-[#2a2d2e] cursor-pointer flex items-center text-gray-500 hover:text-gray-300">
+                    <span class="mr-2 text-blue-400 opacity-60">🎵</span>
+                    bgm.mp3
+                </div>
+                <div class="pl-6 py-1 hover:bg-[#2a2d2e] cursor-pointer flex items-center text-gray-500 hover:text-gray-300">
+                    <span class="mr-2 text-green-400 opacity-60">📦</span>
+                    node_modules
+                </div>
+            </div>
+
+            <div class="mt-auto border-t border-[#3e3e42] p-2">
+                <div class="text-[11px] font-bold text-gray-500 uppercase px-2 mb-1">Outline</div>
+                <div class="text-[12px] text-gray-500 px-4">
+                    <div>User (Class)</div>
+                    <div class="pl-2">constructor</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- (C) 编辑器主区域 -->
+        <div class="flex-1 flex flex-col min-w-0 bg-[#1e1e1e]">
+            
+            <!-- Tab 页签 -->
+            <div class="h-9 bg-[#2d2d2d] flex items-end overflow-x-auto border-b border-[#252526] scrollbar-hide">
+                <div class="h-full px-3 bg-[#1e1e1e] text-yellow-500 text-[13px] border-t-2 border-yellow-500 flex items-center min-w-fit pr-8 relative group">
+                    <span class="mr-2 text-yellow-600">JS</span>
+                    <span class="font-medium">main.kun</span>
+                    <span class="ml-2 text-gray-500 text-xs opacity-0 group-hover:opacity-100 hover:bg-gray-700 rounded-full w-4 h-4 flex items-center justify-center">●</span>
+                    <span class="absolute right-2 top-2.5 opacity-0 group-hover:opacity-100 hover:bg-gray-700 rounded w-4 h-4 flex items-center justify-center text-xs text-gray-300 cursor-pointer">×</span>
+                </div>
+                <div class="h-full px-3 text-gray-500 text-[13px] flex items-center min-w-fit border-r border-[#252526] hover:bg-[#2d2d2d] cursor-pointer italic opacity-60">
+                    lawyer_letter.pdf
+                </div>
+            </div>
+
+            <!-- 面包屑导航 -->
+            <div class="h-6 flex items-center px-4 text-[12px] text-gray-500 bg-[#1e1e1e] shadow-sm">
+                <span>chicken_project</span>
+                <span class="mx-1">›</span>
+                <span>src</span>
+                <span class="mx-1">›</span>
+                <span class="text-gray-300">main.kun</span>
+                <span class="mx-2 text-gray-600">|</span>
+                <span class="text-gray-500">全民制作人大家好</span>
+            </div>
+
+            <!-- 代码编辑与行号 -->
+            <div class="flex-1 flex relative overflow-hidden bg-[#1e1e1e]">
+                <!-- 行号 -->
+                <div id="line-numbers" class="w-14 bg-[#1e1e1e] pt-2 text-[13px] text-gray-600 text-right pr-4 select-none code-area border-r border-[#1e1e1e]">1</div>
+                
+                <!-- 真正的编辑器 Textarea -->
+                <textarea id="editor" class="flex-1 bg-[#1e1e1e] text-[#d4d4d4] p-2 pt-2 code-area text-[14px] outline-none resize-none whitespace-pre" spellcheck="false">全民制作人大家好
+
+    // 变量定义：练习生
+    // 赋值动作：铁山靠
+    练习生 name 铁山靠 "蔡徐坤"
+    练习生 hobby 铁山靠 "唱,跳,rap,篮球"
     
-    练习生 i 穿背带裤 1
+    // 打印：鸡你太美
+    鸡你太美("大家好！我是练习时长两年半的个人练习生", name)
     
-    练习时长 (i 不如...美 21) 中分
-        
-        食不食油饼 (i Music 15 像极了 0) 中分
-            大声喊出("鸡你太美 (FizzBuzz)")
-        背带裤
-        或者是油饼 (i Music 3 像极了 0) 中分
-            大声喊出("鸡 (Fizz)")
-        背带裤
-        或者是油饼 (i Music 5 像极了 0) 中分
-            大声喊出("太美 (Buzz)")
-        背带裤
-        你干嘛 中分
-            大声喊出(i)
-        背带裤
-        
-        i 穿背带裤 i 唱 1
+    // 循环：练习时长
+    练习生 i 铁山靠 0
+    练习时长 (i 不如 2.5) 中分
+        鸡你太美("练习中...", i, "年")
+        // 运算：唱(+)
+        i 铁山靠 i 唱 0.5
+    背带裤
+    
+    // 判断：食不食油饼
+    食不食油饼 (i 像极了 2.5) 中分
+        鸡你太美("Music!")
+    背带裤
+    食不食香精煎鱼 (i 比...强 100) 中分
+        鸡你太美("你干嘛~")
+    背带裤
+    你干嘛 中分
+        鸡你太美("哎哟！")
     背带裤
 
-    大声喊出("----------------")
-    大声喊出("表演结束，谢谢大家！")
-    
-律师函警告
-</textarea>
-        </section>
+Music</textarea>
 
-        <!-- 结果输出区 -->
-        <section class="flex-1 flex flex-col bg-black min-w-0 md:w-1/3">
-            <div class="bg-gray-900 px-4 py-2 text-xs text-yellow-500 font-mono border-b border-gray-700 flex justify-between">
-                <span>CONSOLE OUTPUT</span>
-                <span id="status" class="text-green-500">READY</span>
+                <!-- 浮动运行按钮 (Play) -->
+                <button onclick="runKunCode()" class="absolute top-2 right-6 bg-green-700 hover:bg-green-600 text-white p-1.5 rounded shadow-lg transition-transform hover:scale-105 active:scale-95 z-20 flex items-center group" title="Run Code (Ctrl+F5)">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                    <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap text-xs ml-0 group-hover:ml-1 font-medium">Run Code</span>
+                </button>
             </div>
-            <div id="console-output" class="flex-1 p-4 code-font text-sm overflow-auto text-green-400 font-bold whitespace-pre-wrap"></div>
-        </section>
 
-    </main>
+            <!-- 底部面板 (Terminal) -->
+            <div class="h-48 bg-[#1e1e1e] border-t border-[#3e3e42] flex flex-col shrink-0" id="terminal-panel">
+                <div class="flex text-[11px] uppercase tracking-wide border-b border-[#252526]">
+                    <div class="px-3 py-1.5 text-gray-400 hover:text-white cursor-pointer hover:bg-[#2a2d2e]">Problems</div>
+                    <div class="px-3 py-1.5 text-gray-400 hover:text-white cursor-pointer hover:bg-[#2a2d2e]">Output</div>
+                    <div class="px-3 py-1.5 text-gray-400 hover:text-white cursor-pointer hover:bg-[#2a2d2e]">Debug Console</div>
+                    <div class="px-3 py-1.5 text-white border-b border-white cursor-pointer font-bold bg-[#1e1e1e] z-10">Terminal</div>
+                    <div class="ml-auto flex items-center space-x-2 px-2 text-gray-400">
+                        <span class="cursor-pointer hover:text-white" title="Clear" onclick="clearConsole()">🗑️</span>
+                        <span class="cursor-pointer hover:text-white" title="Close" onclick="document.getElementById('terminal-panel').style.height='30px'">✖</span>
+                    </div>
+                </div>
+                <div id="console-output" class="flex-1 p-2 code-area text-[13px] overflow-auto text-gray-300 font-mono bg-[#1e1e1e]">
+                    <div class="text-gray-500">Microsoft Windows [Version 10.0.19045.2486]</div>
+                    <div class="text-gray-500">(c) Microsoft Corporation. All rights reserved.</div>
+                    <br>
+                    <div class="flex">
+                        <span class="text-[#b5cea8]">C:\Users\IKUN\Desktop\Chicken_Project></span>
+                        <span class="ml-2 animate-pulse text-gray-400">_</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 底部状态栏 -->
+    <div class="h-6 bg-[#007acc] text-white flex items-center px-3 text-[12px] justify-between select-none shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="hover:bg-[#1f8ad2] px-1 cursor-pointer flex items-center">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                main (Git)
+            </div>
+            <div class="hover:bg-[#1f8ad2] px-1 cursor-pointer flex items-center">
+                <span class="mr-1">ⓧ</span> 0
+                <span class="ml-2 mr-1">⚠️</span> 0
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="hover:bg-[#1f8ad2] px-1 cursor-pointer" id="cursor-pos">Ln 1, Col 1</div>
+            <div class="hover:bg-[#1f8ad2] px-1 cursor-pointer">UTF-8</div>
+            <div class="hover:bg-[#1f8ad2] px-1 cursor-pointer">LF</div>
+            <div class="hover:bg-[#1f8ad2] px-1 cursor-pointer font-bold">{ } KunLang</div>
+            <div class="hover:bg-[#1f8ad2] px-1 cursor-pointer">🔔</div>
+        </div>
+    </div>
 
     <script>
-        // 核心编译器逻辑
+        const editor = document.getElementById('editor');
+        const lineNumbers = document.getElementById('line-numbers');
+        const output = document.getElementById('console-output');
+        const cursorStatus = document.getElementById('cursor-pos');
+
+        // ==========================================
+        // 编译器核心：原味热梗版
+        // ==========================================
         const kunToJs = (code) => {
             let jsCode = code;
 
-            // 1. 保护字符串内容 (防止关键字替换误伤字符串内部)
+            // 1. 字符串保护
             const stringLiterals = [];
             jsCode = jsCode.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, (match) => {
                 stringLiterals.push(match);
                 return `__STR_${stringLiterals.length - 1}__`;
             });
 
-            // 2. 预处理注释
-            // 多行注释: 这里是绿尸寒 ... 结束绿尸寒 -> /* ... */
-            jsCode = jsCode.replace(/这里是绿尸寒([\s\S]*?)结束绿尸寒/g, "/* $1 */");
-            // 单行注释: 哎哟 -> //
+            // 2. 注释处理 (哎哟 = //)
+            jsCode = jsCode.replace(/\/\//g, "//"); 
             jsCode = jsCode.replace(/哎哟/g, "//");
 
-            // 3. 结构与关键字替换
-            // 注意：正则顺序很重要，先长后短，避免部分匹配
+            // 3. 经典热梗映射 (去除了生造词)
             const replacements = [
                 // 结构
-                { kun: /鸡你太美/g, js: "/* Program Start */ (async function() {" },
-                { kun: /律师函警告/g, js: "})(); /* Program End */" },
-                
-                // 修复：必须先替换 '穿背带裤' (=)，否则会被下面的 '背带裤' (}) 先替换掉变成 '穿}'
-                { kun: /穿背带裤/g, js: "=" },
-
+                { kun: /全民制作人大家好/g, js: "(async function() {" },
+                { kun: /Music/g, js: "})();" },
                 { kun: /中分/g, js: "{" },
                 { kun: /背带裤/g, js: "}" },
-                { kun: /铁山靠/g, js: ";" },
-                
-                // 变量与赋值
-                { kun: /练习生\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g, js: "let $1" }, // var decl
-                
-                // 控制流
+
+                // 变量操作
+                { kun: /练习生/g, js: "let" },
+                { kun: /铁山靠/g, js: "=" },
+
+                // 逻辑流
+                { kun: /食不食香精煎鱼/g, js: "else if" }, // 新增经典空耳
                 { kun: /食不食油饼/g, js: "if" },
-                { kun: /或者是油饼/g, js: "else if" },
                 { kun: /你干嘛/g, js: "else" },
                 { kun: /练习时长/g, js: "while" },
-                { kun: /出道两年半/g, js: "for" },
-                { kun: /切歌/g, js: "break" },
-                { kun: /再来一遍/g, js: "continue" },
-                { kun: /尝试/g, js: "try" },
-                { kun: /捕捉/g, js: "catch" },
+                { kun: /两年半/g, js: "for" },
 
-                // 函数
-                { kun: /才艺展示/g, js: "function" },
-                { kun: /下台/g, js: "return" },
+                // 输出
+                { kun: /鸡你太美/g, js: "_kun_log" },
 
-                // I/O
-                { kun: /大声喊出/g, js: "_kun_print" },
-                { kun: /听我说/g, js: "prompt" },
-
-                // 运算符 (注意转义)
-                { kun: /像极了/g, js: "===" },
-                { kun: /比\.\.\.秀/g, js: ">" },
-                { kun: /不如\.\.\.美/g, js: "<" },
+                // 运算
                 { kun: /唱/g, js: "+" },
                 { kun: /跳/g, js: "-" },
-                { kun: /Rap/g, js: "*" }, // Rap 必须在 Music 之前如果这里有包含关系，但这里没有
+                { kun: /Rap|rap/g, js: "*" },
                 { kun: /篮球/g, js: "/" },
-                { kun: /Music/g, js: "%" },
 
-                // 值
+                // 比较与值
+                { kun: /像极了/g, js: "===" },
+                { kun: /不如/g, js: "<" },
+                { kun: /比\.\.\.强/g, js: ">" },
                 { kun: /真爱粉/g, js: "true" },
                 { kun: /小黑子/g, js: "false" },
-                { kun: /空气/g, js: "null" },
-                { kun: /只因/g, js: "Infinity" },
-                { kun: /WaitWaitWait/g, js: "error" } // Catch block variable
+                { kun: /荔枝/g, js: "null" }, // 拿什么荔枝 -> null
             ];
 
             replacements.forEach(rule => {
@@ -192,82 +325,101 @@
             return jsCode;
         };
 
-        // 获取 DOM 元素
-        const editor = document.getElementById('editor');
-        const output = document.getElementById('console-output');
-        const status = document.getElementById('status');
-
-        // 自定义打印函数
-        function _kun_print(...args) {
-            const text = args.map(arg => 
-                typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-            ).join(' ');
-            
+        // ==========================================
+        // 运行时与控制台逻辑
+        // ==========================================
+        function _kun_log(...args) {
+            const text = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
             const line = document.createElement('div');
-            line.textContent = "> " + text;
-            line.className = "mb-1 border-l-2 border-yellow-600 pl-2 hover:bg-gray-900";
+            // VS Code 风格输出
+            line.innerHTML = `<span class="text-blue-400">[IKUN]</span> <span class="text-gray-200">${text}</span>`;
+            line.className = "mb-0.5 font-mono";
             output.appendChild(line);
-            output.scrollTop = output.scrollHeight;
+            scrollToBottom();
         }
 
-        // 清空控制台
+        function scrollToBottom() { output.scrollTop = output.scrollHeight; }
+
         function clearConsole() {
-            output.innerHTML = '';
-            status.textContent = 'READY';
-            status.className = 'text-green-500';
+            output.innerHTML = `
+                <div class="text-gray-500">Microsoft Windows [Version 10.0.19045.2486]</div>
+                <div class="flex"><span class="text-[#b5cea8]">C:\\Users\\IKUN\\Desktop\\Chicken_Project></span><span class="ml-2 animate-pulse text-gray-400">_</span></div>
+            `;
         }
 
-        // 运行代码
-        async function runKunCode() {
-            clearConsole();
-            status.textContent = 'RUNNING...';
-            status.className = 'text-yellow-500';
+        // ==========================================
+        // IDE 交互逻辑
+        // ==========================================
+        // 1. 行号
+        const updateLineNumbers = () => {
+            const lines = editor.value.split('\n').length;
+            lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
+        };
+        
+        // 2. 光标
+        const updateCursor = () => {
+            const val = editor.value;
+            const sel = editor.selectionStart;
+            const lines = val.substr(0, sel).split('\n');
+            cursorStatus.textContent = `Ln ${lines.length}, Col ${lines[lines.length - 1].length + 1}`;
+        };
 
-            const sourceCode = editor.value;
-            
-            try {
-                // 转译
-                const jsCode = kunToJs(sourceCode);
-                
-                // 可以在控制台查看转译后的 JS 代码，方便调试
-                console.log("Transpiled JS:\n", jsCode);
-
-                // 执行
-                // 使用 new Function 创建一个隔离的作用域，但仍能访问 _kun_print
-                // 包装在一个异步函数中以支持可能的异步操作
-                const run = new Function('_kun_print', jsCode);
-                
-                await run(_kun_print);
-
-                status.textContent = 'FINISHED';
-                status.className = 'text-green-500';
-
-            } catch (e) {
-                status.textContent = 'WaitWaitWait';
-                status.className = 'text-red-500';
-                
-                const errorLine = document.createElement('div');
-                errorLine.textContent = `❌ 律师函警告 (Runtime Error): ${e.message}`;
-                errorLine.className = "text-red-500 font-bold mt-2 p-2 bg-red-900/20 border border-red-500 rounded";
-                output.appendChild(errorLine);
-            }
-        }
-
-        // 简单的按 Tab 输入缩进
+        editor.addEventListener('input', () => { updateLineNumbers(); updateCursor(); });
+        editor.addEventListener('click', updateCursor);
+        editor.addEventListener('keyup', updateCursor);
+        editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
+        
+        // Tab 键
         editor.addEventListener('keydown', function(e) {
             if (e.key == 'Tab') {
                 e.preventDefault();
-                var start = this.selectionStart;
-                var end = this.selectionEnd;
-
-                // set textarea value to: text before caret + tab + text after caret
-                this.value = this.value.substring(0, start) +
-                    "    " + this.value.substring(end);
-
-                // put caret at right position again
-                this.selectionStart = this.selectionEnd = start + 4;
+                const s = this.selectionStart;
+                this.value = this.value.substring(0, s) + "    " + this.value.substring(this.selectionEnd);
+                this.selectionStart = this.selectionEnd = s + 4;
             }
         });
+
+        // ==========================================
+        // 运行主程序
+        // ==========================================
+        async function runKunCode() {
+            // UI 反馈
+            const oldContent = output.innerHTML;
+            output.innerHTML += `<div class="mt-2 text-yellow-500">> node main.kun</div>`;
+            scrollToBottom();
+
+            try {
+                // 模拟编译延迟
+                await new Promise(r => setTimeout(r, 300));
+
+                const sourceCode = editor.value;
+                const jsCode = kunToJs(sourceCode);
+                
+                // 执行
+                const run = new Function('_kun_log', jsCode);
+                await run(_kun_log);
+
+                output.innerHTML += `<div class="text-green-500 mt-1 opacity-80 text-xs">Done in 2.5s.</div>`;
+                output.innerHTML += `<div class="flex mt-1"><span class="text-[#b5cea8]">C:\\Users\\IKUN\\Desktop\\Chicken_Project></span><span class="ml-2 animate-pulse text-gray-400">_</span></div>`;
+
+            } catch (e) {
+                // 错误处理
+                document.body.classList.add('shake-window');
+                setTimeout(() => document.body.classList.remove('shake-window'), 500);
+
+                output.innerHTML += `
+                    <div class="mt-2 pl-2 border-l-4 border-red-500 bg-red-900/20 py-1">
+                        <div class="text-red-400 font-bold">Uncaught Exception: LawyerLetterError</div>
+                        <div class="text-gray-400 text-xs">${e.message}</div>
+                        <div class="text-gray-500 text-xs mt-1 italic">at 练习生 (main.kun:2:5)</div>
+                    </div>
+                    <div class="flex mt-2"><span class="text-[#b5cea8]">C:\\Users\\IKUN\\Desktop\\Chicken_Project></span><span class="ml-2 animate-pulse text-gray-400">_</span></div>
+                `;
+            }
+            scrollToBottom();
+        }
+
+        updateLineNumbers();
     </script>
 </body>
 </html>
