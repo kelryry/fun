@@ -13,33 +13,32 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
 
+    <!-- 顶部提示框 (Toast) -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center gap-2">
+        <i class="fas fa-check-circle text-green-400"></i>
+        <span>发送成功！可以继续上传</span>
+    </div>
+
     <!-- 卡片容器 -->
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden relative">
         
         <!-- 头部 -->
         <div class="bg-blue-600 p-6 text-white text-center">
             <h1 class="text-xl font-bold"><i class="fas fa-paper-plane mr-2"></i>看看你的</h1>
-            <p class="text-blue-100 text-sm mt-1">照片将直接发送到我的邮箱</p>
+            <p class="text-blue-100 text-sm mt-1">照片将直接发送给我</p>
         </div>
 
         <!-- 
-            核心修改：使用原生 Form 提交 
-            1. action: 指向您的邮箱
-            2. method: POST
-            3. enctype: 必须有，否则发不了文件
+            表单配置：
+            我们移除了 action 属性，改用 JS 的 AJAX 提交，
+            这样就不会发生页面跳转了。
         -->
-        <form id="uploadForm" 
-              action="https://formsubmit.co/test20260117z@outlook.com" 
-              method="POST" 
-              enctype="multipart/form-data"
-              class="p-6 space-y-6">
+        <form id="uploadForm" class="p-6 space-y-6">
             
             <!-- FormSubmit 配置参数 -->
             <input type="hidden" name="_subject" value="新照片上传 (KKP)">
             <input type="hidden" name="_template" value="table">
-            <input type="hidden" name="_captcha" value="false"> <!-- 建议先关掉，如果还是收不到，可以删掉这一行开启验证码 -->
-            <!-- 发送成功后自动返回这个页面 (可选，如果不加会显示FormSubmit的广告页) -->
-            <!-- <input type="hidden" name="_next" value="http://你的网址..."> -->
+            <input type="hidden" name="_captcha" value="false"> 
 
             <!-- 1. 拍照/上传区域 -->
             <div id="uploadArea">
@@ -65,7 +64,7 @@
                     </button>
                 </div>
 
-                <!-- 新增：署名输入框 -->
+                <!-- 署名输入框 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">我是谁 (可选)</label>
                     <div class="relative">
@@ -82,8 +81,14 @@
                     <span>确认发送</span>
                     <i class="fas fa-paper-plane"></i>
                 </button>
-                
-                <p class="text-xs text-center text-gray-400">点击发送后请耐心等待跳转</p>
+            </div>
+
+            <!-- 遮罩层 (发送时显示) -->
+            <div id="loadingOverlay" class="absolute inset-0 bg-white/80 hidden items-center justify-center z-10">
+                <div class="text-center">
+                    <i class="fas fa-circle-notch fa-spin text-4xl text-blue-600 mb-2"></i>
+                    <p class="text-gray-600 font-medium">正在传输...</p>
+                </div>
             </div>
 
         </form>
@@ -94,18 +99,26 @@
     </div>
 
     <script>
+        // ==========================================
+        // 配置您的邮箱
+        // ==========================================
+        const MY_EMAIL = "test20260117z@outlook.com"; 
+        // ==========================================
+
+        const form = document.getElementById('uploadForm');
         const fileInput = document.getElementById('fileInput');
         const uploadArea = document.getElementById('uploadArea');
         const previewArea = document.getElementById('previewArea');
         const imgPreview = document.getElementById('imgPreview');
         const submitBtn = document.getElementById('submitBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const toast = document.getElementById('toast');
 
-        // 选择图片后显示预览
+        // 1. 选择图片后显示预览
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            // 限制文件大小提示
             if (file.size > 15 * 1024 * 1024) {
                 alert("图片太大了 (请小于15MB)");
                 this.value = "";
@@ -121,20 +134,62 @@
             reader.readAsDataURL(file);
         });
 
-        // 重置表单
+        // 2. 重置表单
         window.resetForm = function() {
             fileInput.value = "";
-            // 清空名字输入
             document.querySelector('input[name="name"]').value = "";
             uploadArea.classList.remove('hidden');
             previewArea.classList.add('hidden');
+            loadingOverlay.classList.add('hidden'); // 确保遮罩关闭
+            submitBtn.disabled = false;
         };
 
-        // 提交时的简单加载动画
-        document.getElementById('uploadForm').addEventListener('submit', function() {
+        // 3. 提示框控制
+        function showToast(message, isError = false) {
+            toast.innerHTML = isError ? 
+                `<i class="fas fa-times-circle text-red-400"></i><span>${message}</span>` : 
+                `<i class="fas fa-check-circle text-green-400"></i><span>${message}</span>`;
+            
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        // 4. AJAX 提交处理
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // 阻止默认跳转
+
+            // 显示加载状态
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 正在上传...';
-            submitBtn.classList.add('opacity-75');
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+
+            const formData = new FormData(form);
+
+            // 使用 AJAX 接口提交
+            fetch(`https://formsubmit.co/ajax/${MY_EMAIL}`, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success === "true" || data.success === true || !data.error) {
+                    // 发送成功
+                    showToast("发送成功！");
+                    resetForm(); // 直接重置，准备发下一张
+                } else {
+                    // 逻辑错误
+                    throw new Error(data.message || "发送失败");
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                showToast("发送失败，请重试", true);
+                loadingOverlay.classList.add('hidden'); // 仅隐藏遮罩，不重置表单以便重试
+                loadingOverlay.classList.remove('flex');
+                submitBtn.disabled = false;
+            });
         });
     </script>
 </body>
