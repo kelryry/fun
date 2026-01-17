@@ -25,15 +25,15 @@
         <!-- 头部 -->
         <div class="bg-blue-600 p-6 text-white text-center">
             <h1 class="text-xl font-bold"><i class="fas fa-paper-plane mr-2"></i>看看你的</h1>
-            <p class="text-blue-100 text-sm mt-1">照片将直接发送给我</p>
+            <p class="text-blue-100 text-sm mt-1">照片将直接发送到我的邮箱</p>
         </div>
 
         <!-- 
             表单配置：
-            我们移除了 action 属性，改用 JS 的 AJAX 提交，
-            这样就不会发生页面跳转了。
+            我们移除了 action 属性，改用 JS 的 AJAX 提交。
+            新增 enctype="multipart/form-data" 确保浏览器正确处理文件流。
         -->
-        <form id="uploadForm" class="p-6 space-y-6">
+        <form id="uploadForm" class="p-6 space-y-6" enctype="multipart/form-data">
             
             <!-- FormSubmit 配置参数 -->
             <input type="hidden" name="_subject" value="新照片上传 (KKP)">
@@ -88,6 +88,7 @@
                 <div class="text-center">
                     <i class="fas fa-circle-notch fa-spin text-4xl text-blue-600 mb-2"></i>
                     <p class="text-gray-600 font-medium">正在传输...</p>
+                    <p class="text-xs text-gray-400 mt-1">请保持网络通畅</p>
                 </div>
             </div>
 
@@ -119,8 +120,9 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            if (file.size > 15 * 1024 * 1024) {
-                alert("图片太大了 (请小于15MB)");
+            // ⚠️ 降低限制到 10MB，因为邮件附件通常有限制
+            if (file.size > 10 * 1024 * 1024) {
+                alert("图片太大了 (请小于10MB，否则邮件发不出去)");
                 this.value = "";
                 return;
             }
@@ -170,23 +172,28 @@
             // 使用 AJAX 接口提交
             fetch(`https://formsubmit.co/ajax/${MY_EMAIL}`, {
                 method: "POST",
-                body: formData
+                body: formData,
+                headers: {
+                    // 明确告诉服务器我们期望 JSON，这有时候能提高接口稳定性
+                    'Accept': 'application/json'
+                }
             })
             .then(response => response.json())
             .then(data => {
-                if(data.success === "true" || data.success === true || !data.error) {
+                // FormSubmit 成功时通常返回 success: "true" (字符串) 或 true (布尔值)
+                if(data.success === "true" || data.success === true) {
                     // 发送成功
                     showToast("发送成功！");
                     resetForm(); // 直接重置，准备发下一张
                 } else {
-                    // 逻辑错误
+                    // 如果有错误信息就抛出，否则抛出通用错误
                     throw new Error(data.message || "发送失败");
                 }
             })
             .catch(error => {
                 console.error(error);
-                showToast("发送失败，请重试", true);
-                loadingOverlay.classList.add('hidden'); // 仅隐藏遮罩，不重置表单以便重试
+                showToast("发送失败，网络不稳或图片过大", true);
+                loadingOverlay.classList.add('hidden'); // 仅隐藏遮罩
                 loadingOverlay.classList.remove('flex');
                 submitBtn.disabled = false;
             });
