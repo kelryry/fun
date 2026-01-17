@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KKP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- 卡片容器 -->
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        
+        <!-- 头部 -->
+        <div class="bg-blue-600 p-6 text-white text-center">
+            <h1 class="text-xl font-bold"><i class="fas fa-paper-plane mr-2"></i>看看你的</h1>
+            <p class="text-blue-100 text-sm mt-1">照片将直接发送到我的邮箱</p>
+        </div>
+
+        <!-- 表单区域 -->
+        <form id="uploadForm" class="p-6 space-y-6">
+            
+            <!-- 1. 拍照/上传按钮 -->
+            <div id="uploadArea">
+                <input type="file" id="fileInput" name="attachment" accept="image/*" class="hidden" required>
+                <!-- accept="image/*" 在手机上会自动弹出“拍照”或“图库”选项 -->
+                
+                <div onclick="document.getElementById('fileInput').click()" 
+                     class="cursor-pointer border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 h-48 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors active:bg-gray-200">
+                    <div class="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 text-blue-500">
+                        <i class="fas fa-camera text-3xl"></i>
+                    </div>
+                    <span class="text-gray-500 font-medium">点击拍照或选择照片</span>
+                </div>
+            </div>
+
+            <!-- 2. 预览区域 (默认隐藏) -->
+            <div id="previewArea" class="hidden">
+                <div class="relative rounded-lg overflow-hidden border border-gray-200">
+                    <img id="imgPreview" class="w-full h-64 object-cover bg-gray-100" src="">
+                    <button type="button" onclick="resetForm()" class="absolute top-2 right-2 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-all flex justify-center items-center gap-2">
+                        <span>确认发送</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. 状态信息 -->
+            <div id="statusMessage" class="hidden text-center p-4 rounded-lg bg-gray-50 text-sm text-gray-600">
+                <!-- 动态内容 -->
+            </div>
+
+        </form>
+
+        <div class="bg-gray-50 p-3 text-center text-xs text-gray-400 border-t border-gray-100">
+            无需登录，直接上传
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚠️ 第一步：请在这里填入你的接收邮箱
+        // ==========================================
+        const MY_EMAIL = "your-email@example.com"; 
+        // ==========================================
+
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const previewArea = document.getElementById('previewArea');
+        const imgPreview = document.getElementById('imgPreview');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // 选择图片后显示预览
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 限制文件大小 (邮件附件建议不超过 15MB)
+            if (file.size > 15 * 1024 * 1024) {
+                alert("图片太大了 (请小于15MB)");
+                this.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imgPreview.src = e.target.result;
+                uploadArea.classList.add('hidden');
+                previewArea.classList.remove('hidden');
+            }
+            reader.readAsDataURL(file);
+        });
+
+        // 重置表单
+        window.resetForm = function() {
+            fileInput.value = "";
+            uploadArea.classList.remove('hidden');
+            previewArea.classList.add('hidden');
+            statusMessage.classList.add('hidden');
+            enableBtn();
+        };
+
+        function disableBtn() {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loader"></div> 正在发送...';
+            submitBtn.classList.add('bg-gray-400');
+            submitBtn.classList.remove('bg-blue-600');
+        }
+
+        function enableBtn() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '确认发送';
+            submitBtn.classList.remove('bg-gray-400');
+            submitBtn.classList.add('bg-blue-600');
+        }
+
+        // 提交表单
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 检查用户是否修改了邮箱
+            if (MY_EMAIL.includes("your-email")) {
+                alert("请先修改代码中的邮箱地址！");
+                return;
+            }
+
+            disableBtn();
+
+            const formData = new FormData();
+            formData.append('attachment', fileInput.files[0]);
+            // FormSubmit 配置
+            formData.append('_captcha', 'false'); // 关闭验证码
+            formData.append('_subject', '新照片上传提醒'); // 邮件标题
+
+            // 发送请求
+            fetch(`https://formsubmit.co/${MY_EMAIL}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    showSuccess();
+                } else {
+                    throw new Error("发送失败");
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                statusMessage.innerHTML = "<span class='text-red-500'>发送失败，请稍后重试</span>";
+                statusMessage.classList.remove('hidden');
+                enableBtn();
+            });
+        });
+
+        function showSuccess() {
+            previewArea.classList.add('hidden');
+            statusMessage.innerHTML = `
+                <div class="text-green-500 text-xl mb-2"><i class="fas fa-check-circle"></i></div>
+                <div class="font-bold text-gray-800">发送成功！</div>
+                <div class="text-xs text-gray-500 mt-1">请查看您的邮箱</div>
+                <button onclick="resetForm()" class="mt-4 text-blue-600 text-sm hover:underline">再发一张</button>
+            `;
+            statusMessage.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
