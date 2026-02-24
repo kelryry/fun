@@ -9,8 +9,8 @@
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(203, 213, 225, 0.5); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.8); }
         
         /* 避免文本被意外选中 */
         .no-select { user-select: none; }
@@ -18,9 +18,9 @@
 </head>
 <body class="relative min-h-screen text-slate-800 font-sans overflow-x-hidden no-select">
 
-    <!-- 背景图片 (高透明度) -->
+    <!-- 背景图片 (增加透明度使其可见，同时被上层毛玻璃特效透出) -->
     <div class="fixed inset-0 z-[-1]" 
-         style="background-image: url('缘之空.jpeg'); background-size: cover; background-position: center; opacity: 0.15; pointer-events: none;">
+         style="background-image: url('缘之空.jpeg'); background-size: cover; background-position: center; opacity: 0.35; pointer-events: none;">
     </div>
 
     <!-- 自动循环播放的背景音乐 -->
@@ -30,19 +30,20 @@
     <div class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
         
         <!-- Header -->
-        <header class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center justify-between">
+        <header class="bg-white/30 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 p-6 flex items-center justify-between transition-all">
             <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2.5 rounded-xl">
+                <div class="bg-indigo-600/90 p-2.5 rounded-xl shadow-sm">
                     <svg class="w-6 h-6 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 22 8-20"/><path d="m16 22-8-20"/><path d="M9 7h6"/><path d="M8 12h8"/><path d="M9 17h6"/></svg>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">海角大师</h1>
-                    <p class="text-sm text-slate-500 mt-0.5">客观的基因期望相似度与族谱分析推演</p>
+                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight drop-shadow-sm">海角大师</h1>
+                    <p class="text-sm text-slate-700 mt-0.5 font-medium">客观的基因期望相似度与族谱分析推演</p>
                 </div>
             </div>
-            <div id="music-indicator" class="hidden items-center text-xs text-indigo-500 animate-pulse">
-                <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                音乐播放中
+            <!-- 音乐播放指示器，增加歌曲名和更好的透明样式 -->
+            <div id="music-indicator" class="hidden items-center text-xs text-indigo-800 font-bold animate-pulse bg-white/40 px-3 py-1.5 rounded-full shadow-sm border border-white/50 backdrop-blur-sm">
+                <svg class="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                正在播放: 遥远的天空
             </div>
         </header>
 
@@ -50,9 +51,9 @@
             
             <!-- 左侧：控制面板 -->
             <div class="lg:col-span-4 space-y-4">
-                <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 p-5">
-                    <h2 class="text-base font-semibold text-slate-900 mb-4 flex items-center">
-                        <svg class="w-4 h-4 mr-2 text-indigo-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+                <div class="bg-white/30 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 p-5">
+                    <h2 class="text-base font-semibold text-slate-900 mb-4 flex items-center drop-shadow-sm">
+                        <svg class="w-4 h-4 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
                         推演亲属路径
                     </h2>
                     
@@ -60,12 +61,12 @@
                         <!-- 按钮将由 JS 渲染 -->
                     </div>
 
-                    <div class="mt-6 pt-5 border-t border-slate-200 flex gap-3">
-                        <button id="btn-undo" class="flex-1 flex justify-center items-center px-4 py-2 bg-white/50 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    <div class="mt-6 pt-5 border-t border-white/40 flex gap-3">
+                        <button id="btn-undo" class="flex-1 flex justify-center items-center px-4 py-2 bg-white/30 border border-white/50 rounded-lg text-sm font-medium text-slate-800 hover:bg-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors backdrop-blur-sm shadow-sm">
                             <svg class="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> 
                             撤销
                         </button>
-                        <button id="btn-reset" class="flex-1 flex justify-center items-center px-4 py-2 bg-white/50 border border-slate-300 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        <button id="btn-reset" class="flex-1 flex justify-center items-center px-4 py-2 bg-white/30 border border-white/50 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors backdrop-blur-sm shadow-sm">
                             <svg class="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> 
                             重置
                         </button>
@@ -77,15 +78,15 @@
             <div class="lg:col-span-8 space-y-6">
                 
                 <!-- 族谱树画布 -->
-                <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[420px]">
-                    <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-white/40">
-                        <h2 class="text-base font-semibold text-slate-900 flex items-center">动态族谱树</h2>
-                        <span id="gen-count" class="hidden text-xs text-slate-500 font-medium bg-white/70 px-2 py-1 rounded border border-slate-200 shadow-sm">
+                <div class="bg-white/30 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 overflow-hidden flex flex-col h-[420px]">
+                    <div class="p-4 border-b border-white/30 flex justify-between items-center bg-white/20">
+                        <h2 class="text-base font-semibold text-slate-900 flex items-center drop-shadow-sm">动态族谱树</h2>
+                        <span id="gen-count" class="hidden text-xs text-slate-800 font-bold bg-white/50 px-2 py-1 rounded border border-white/50 shadow-sm backdrop-blur-sm">
                             遗传有效代数：0
                         </span>
                     </div>
                     
-                    <div id="canvas-container" class="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px]">
+                    <div id="canvas-container" class="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(rgba(203,213,225,0.4)_1px,transparent_1px)] [background-size:20px_20px]">
                         <div id="canvas-content" class="relative p-8">
                             <!-- 画布内容由 JS 渲染 -->
                         </div>
@@ -93,26 +94,26 @@
                 </div>
 
                 <!-- 分析结果 -->
-                <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 p-6 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-full -z-10 opacity-50"></div>
+                <div class="bg-white/30 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-50/30 rounded-bl-full -z-10 opacity-80 blur-2xl"></div>
                     
-                    <h2 class="text-base font-semibold text-slate-900 mb-5 flex items-center">
-                        <svg class="w-4 h-4 mr-2 text-indigo-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <h2 class="text-base font-semibold text-slate-900 mb-5 flex items-center drop-shadow-sm">
+                        <svg class="w-4 h-4 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                         遗传学期望评估
                     </h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <p class="text-sm font-medium text-slate-500 mb-1">基因期望相似占比 (Wright's r)</p>
+                            <p class="text-sm font-bold text-slate-600 mb-1 drop-shadow-sm">基因期望相似占比 (Wright's r)</p>
                             <div class="flex items-center space-x-3 mt-2">
-                                <span id="r-percentage" class="text-5xl font-extrabold tracking-tight text-slate-900">100.00%</span>
-                                <span id="risk-badge" class="hidden px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm"></span>
+                                <span id="r-percentage" class="text-5xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">100.00%</span>
+                                <span id="risk-badge" class="hidden px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm backdrop-blur-md"></span>
                             </div>
                         </div>
                         
                         <div class="flex flex-col justify-center">
-                            <p class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">客观临床建议：</p>
-                            <p id="advice-text" class="text-sm leading-relaxed text-slate-500">
+                            <p class="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider drop-shadow-sm">客观临床建议：</p>
+                            <p id="advice-text" class="text-sm leading-relaxed text-slate-700 font-medium drop-shadow-sm">
                                 请添加亲戚路径以计算基因相似度及婚配建议。
                             </p>
                         </div>
@@ -125,15 +126,16 @@
 
     <!-- 逻辑脚本 -->
     <script>
+        // 调整了节点颜色的透明度，使其在画布上也呈现半透明毛玻璃效果
         const RELATIONS = [
-            { id: 'father', label: '父亲', group: 'up', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-            { id: 'mother', label: '母亲', group: 'up', color: 'bg-pink-50 text-pink-700 border-pink-200' },
-            { id: 'brother', label: '亲兄弟', group: 'same', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-            { id: 'sister', label: '亲姐妹', group: 'same', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-            { id: 'half_brother', label: '同父/母异母/父兄弟', group: 'half_same', color: 'bg-slate-50 text-slate-700 border-slate-200' },
-            { id: 'half_sister', label: '同父/母异母/父姐妹', group: 'half_same', color: 'bg-slate-50 text-slate-700 border-slate-200' },
-            { id: 'son', label: '儿子', group: 'down', color: 'bg-teal-50 text-teal-700 border-teal-200' },
-            { id: 'daughter', label: '女儿', group: 'down', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+            { id: 'father', label: '父亲', group: 'up', color: 'bg-blue-100/60 text-blue-800 border-blue-300/60' },
+            { id: 'mother', label: '母亲', group: 'up', color: 'bg-pink-100/60 text-pink-800 border-pink-300/60' },
+            { id: 'brother', label: '亲兄弟', group: 'same', color: 'bg-indigo-100/60 text-indigo-800 border-indigo-300/60' },
+            { id: 'sister', label: '亲姐妹', group: 'same', color: 'bg-purple-100/60 text-purple-800 border-purple-300/60' },
+            { id: 'half_brother', label: '同父/母异母/父兄弟', group: 'half_same', color: 'bg-slate-100/60 text-slate-800 border-slate-300/60' },
+            { id: 'half_sister', label: '同父/母异母/父姐妹', group: 'half_same', color: 'bg-slate-100/60 text-slate-800 border-slate-300/60' },
+            { id: 'son', label: '儿子', group: 'down', color: 'bg-teal-100/60 text-teal-800 border-teal-300/60' },
+            { id: 'daughter', label: '女儿', group: 'down', color: 'bg-emerald-100/60 text-emerald-800 border-emerald-300/60' },
         ];
 
         // 预设 Icon SVGs
@@ -145,7 +147,7 @@
             right: `<svg class="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`
         };
 
-        const initialPath = [{ id: 'self', baseId: 'self', label: '我', group: 'start', color: 'bg-slate-800 text-white border-slate-900' }];
+        const initialPath = [{ id: 'self', baseId: 'self', label: '我', group: 'start', color: 'bg-slate-800/80 text-white border-slate-700/80' }];
         let path = [...initialPath];
 
         // 核心计算栈抵消算法
@@ -187,7 +189,7 @@
             return { r: M * Math.pow(0.5, L), sequence: stack };
         }
 
-        // 初始化按钮面板
+        // 初始化按钮面板 (透明按键)
         function initButtons() {
             const container = document.getElementById('btn-container');
             const groups = [
@@ -200,13 +202,13 @@
             groups.forEach(g => {
                 html += `
                 <div>
-                    <div class="text-xs font-bold text-slate-400 mb-2 flex items-center uppercase tracking-wider">
+                    <div class="text-xs font-bold text-slate-500 mb-2 flex items-center uppercase tracking-wider drop-shadow-sm">
                         ${g.icon} ${g.title}
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         ${g.rels.map(rel => `
                             <button onclick="addRelation('${rel.id}')"
-                                class="px-3 py-2.5 bg-white/60 hover:bg-indigo-50 text-slate-700 text-sm font-medium rounded-lg border border-slate-200 hover:border-indigo-300 hover:text-indigo-700 transition-all active:scale-95 shadow-sm">
+                                class="px-3 py-2.5 bg-white/40 hover:bg-white/60 text-slate-800 text-sm font-medium rounded-lg border border-white/50 hover:border-indigo-300 hover:text-indigo-800 transition-all active:scale-95 shadow-sm backdrop-blur-sm">
                                 ${rel.label}
                             </button>
                         `).join('')}
@@ -259,7 +261,7 @@
             if (isSelf) {
                 badge.classList.add('hidden');
                 adviceTxt.innerText = "请添加亲戚路径以计算基因相似度及婚配建议。";
-                adviceTxt.className = "text-sm leading-relaxed text-slate-500";
+                adviceTxt.className = "text-sm leading-relaxed text-slate-700 font-medium drop-shadow-sm";
                 genCount.classList.add('hidden');
             } else {
                 badge.classList.remove('hidden');
@@ -267,32 +269,32 @@
                 genCount.innerText = `遗传有效代数：${analysis.sequence.length}`;
                 genCount.classList.add('flex', 'items-center');
                 
-                adviceTxt.className = "text-sm leading-relaxed text-slate-800 font-medium";
+                adviceTxt.className = "text-sm leading-relaxed text-slate-800 font-bold drop-shadow-sm";
                 
                 let rClass, text, advice;
                 if (analysis.r >= 0.5) {
-                    text = "极高风险"; rClass = "text-red-700 bg-red-50 border-red-300";
+                    text = "极高风险"; rClass = "text-red-800 bg-red-100/60 border-red-300/50";
                     advice = "目标为一级血亲（如父母、子女、全血缘兄弟姐妹）。此级别基因重合度极高，若发生婚配，后代患严重隐性遗传病的概率呈指数级增加，纯遗传学角度强烈不建议。";
                 } else if (analysis.r >= 0.25) {
-                    text = "高风险"; rClass = "text-orange-700 bg-orange-50 border-orange-300";
+                    text = "高风险"; rClass = "text-orange-800 bg-orange-100/60 border-orange-300/50";
                     advice = "目标为二级血亲（如叔伯姑舅姨、祖父母、半血缘兄弟姐妹）。属于近亲婚配范畴，后代隐性遗传病发病风险极高，不建议婚配。";
                 } else if (analysis.r >= 0.125) {
-                    text = "较高风险"; rClass = "text-amber-700 bg-amber-50 border-amber-300";
+                    text = "较高风险"; rClass = "text-amber-800 bg-amber-100/60 border-amber-300/50";
                     advice = "目标为三级血亲（如堂表亲）。此遗传距离内婚配，后代隐性遗传病发病风险仍显著高于常人基础概率。";
                 } else if (analysis.r >= 0.03125) {
-                    text = "中等风险"; rClass = "text-yellow-700 bg-yellow-50 border-yellow-300";
+                    text = "中等风险"; rClass = "text-yellow-800 bg-yellow-100/60 border-yellow-300/50";
                     advice = "目标为四至五级血亲。纯基因层面风险仅略高于随机人群，若结合建议进行详细的优生遗传咨询与隐性致病基因携带者筛查。";
                 } else {
-                    text = "低风险"; rClass = "text-emerald-700 bg-emerald-50 border-emerald-300";
+                    text = "低风险"; rClass = "text-emerald-800 bg-emerald-100/60 border-emerald-300/50";
                     advice = "基因相似度极低。纯基因层面与无血缘随机人群无明显差异，无特殊遗传风险提示，属于常规婚配范围。";
                 }
                 
                 badge.innerText = text;
-                badge.className = `px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm ${rClass}`;
+                badge.className = `px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm backdrop-blur-md ${rClass}`;
                 adviceTxt.innerText = advice;
             }
 
-            // 重新绘制画布 (修复连续兄弟姐妹的问题，采用左到右平滑曲线连接)
+            // 重新绘制画布
             drawTree();
         }
 
@@ -310,7 +312,6 @@
                 let step = path[i];
                 if (step.group === 'up') currentGen -= 1;
                 else if (step.group === 'down') currentGen += 1;
-                // same 和 half_same 代际(currentGen)不发生改变
                 
                 nodes.push({
                     ...step,
@@ -345,27 +346,26 @@
                 let endX = curr.x;
                 let endY = curr.y + NODE_HEIGHT / 2;
                 
-                // 平滑的贝塞尔曲线
                 let midX = startX + (endX - startX) / 2;
                 let pathD = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
                 
                 let isHalf = curr.group === 'half_same';
-                let stroke = isHalf ? "#cbd5e1" : "#94a3b8";
+                let stroke = isHalf ? "rgba(203, 213, 225, 0.8)" : "rgba(148, 163, 184, 0.9)";
                 let dash = isHalf ? "5 5" : "none";
                 
                 svgHtml += `<path d="${pathD}" fill="none" stroke="${stroke}" stroke-width="2.5" stroke-dasharray="${dash}" class="transition-all duration-500"></path>`;
             }
             svgHtml += `</svg>`;
             
-            // 绘制节点
+            // 绘制节点 (使用毛玻璃透明效果)
             let nodesHtml = nodes.map(n => {
-                let targetClasses = n.isTarget ? 'bg-rose-500 text-white border-rose-600 shadow-lg ring-4 ring-rose-200 z-20' : n.color + ' shadow-sm z-10';
+                let targetClasses = n.isTarget ? 'bg-rose-500/80 text-white border-rose-400 shadow-lg ring-4 ring-rose-200/50 z-20' : n.color + ' shadow-sm z-10';
                 let icon = n.isTarget ? SVGS.target : (n.id === 'self' ? SVGS.user : '');
                 
                 return `
-                <div class="absolute flex items-center justify-center border rounded-xl px-3 py-2 transition-all duration-500 bg-white/50 backdrop-blur-sm ${targetClasses}"
+                <div class="absolute flex items-center justify-center border rounded-xl px-3 py-2 transition-all duration-500 backdrop-blur-md ${targetClasses}"
                      style="width: ${NODE_WIDTH}px; height: ${NODE_HEIGHT}px; left: ${n.x}px; top: ${n.y}px;">
-                    <span class="text-sm font-semibold tracking-wide whitespace-nowrap flex items-center">
+                    <span class="text-sm font-semibold tracking-wide whitespace-nowrap flex items-center drop-shadow-sm">
                         ${icon} ${n.label}
                     </span>
                 </div>`;
