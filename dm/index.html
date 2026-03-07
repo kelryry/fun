@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D 卷曲体毛 (单根) 参数预览</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
     <style>
         /* Custom scrollbar for controls */
         .custom-scroll::-webkit-scrollbar {
@@ -47,6 +48,21 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
         }
 
+        /* Share Modal */
+        #shareModal {
+            display: none;
+        }
+        #shareModal.active {
+            display: flex !important;
+        }
+        .share-modal-card {
+            animation: shareModalIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes shareModalIn {
+            from { opacity: 0; transform: scale(0.85) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
         /* Canvas interaction prevention */
         canvas {
             touch-action: none;
@@ -68,6 +84,9 @@
             </button>
             <button id="btnReset" class="bg-white/90 hover:bg-white shadow-md p-2 rounded-lg text-sm font-medium text-gray-600 transition backdrop-blur-sm border border-gray-200">
                 ↺ 重置参数
+            </button>
+            <button id="btnShare" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-md p-2 rounded-lg text-sm font-medium text-white transition">
+                📤 生成分享
             </button>
         </div>
 
@@ -97,6 +116,42 @@
         <div class="p-3 bg-gray-100 border-t border-gray-200 text-xs text-gray-500 shrink-0 flex justify-between">
             <span id="statusText">Ready</span>
             <span>Version 1.0 (JS Port)</span>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-50 items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="share-modal-card bg-white rounded-2xl shadow-2xl w-[92vw] max-w-md mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-purple-600 to-pink-500 p-4 text-white">
+                <h2 class="text-xl font-bold">📤 生成分享 GIF</h2>
+                <p class="text-sm opacity-80 mt-1">聚光灯 · 360°旋转 · 彩带特效</p>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">TA 是谁？</label>
+                    <input type="text" id="shareNameInput" placeholder="输入名字，例如: 老王"
+                        class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:border-purple-500 outline-none text-lg transition">
+                </div>
+                <div id="sharePreview" class="hidden">
+                    <div class="bg-gray-900 rounded-xl overflow-hidden flex justify-center p-2">
+                        <img id="sharePreviewImg" class="max-h-72 rounded">
+                    </div>
+                </div>
+                <div id="shareProgress" class="hidden space-y-2">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div id="shareProgressBar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all" style="width:0%"></div>
+                        </div>
+                        <span id="shareProgressText" class="text-sm text-gray-500 w-12 text-right">0%</span>
+                    </div>
+                    <p id="shareStatusText" class="text-xs text-gray-400 text-center">正在渲染动画帧...</p>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex gap-3">
+                <button id="shareCloseBtn" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-gray-600 font-medium hover:bg-gray-100 transition">取消</button>
+                <button id="shareGenBtn" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-medium hover:opacity-90 transition disabled:opacity-50">🎬 生成 GIF</button>
+                <button id="shareSaveBtn" class="hidden flex-1 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium hover:opacity-90 transition">💾 保存到本地</button>
+            </div>
         </div>
     </div>
 
@@ -706,9 +761,427 @@ class App {
     }
 }
 
+// === Share GIF Generator ===
+class ShareGenerator {
+    constructor(app) {
+        this.app = app;
+        this.W = 360;
+        this.H = 480;
+        this.offCanvas = document.createElement('canvas');
+        this.offCanvas.width = this.W;
+        this.offCanvas.height = this.H;
+        this.offCtx = this.offCanvas.getContext('2d');
+        this.gifBlob = null;
+    }
+
+    renderHairOnCtx(ctx, w, h, cy, yaw, pitch, zoom, color) {
+        const points = this.app.points;
+        if (points.length < 2) return;
+        const center = this.app.center;
+        const camDist = this.app.camDistMm;
+        const fov = 50 * Math.PI / 180;
+        let focal = (0.5 * Math.min(w, h)) / Math.tan(0.5 * fov);
+        focal *= Math.max(0.6, zoom);
+        const cP = Math.cos(pitch), sP = Math.sin(pitch);
+        const cYaw = Math.cos(yaw), sYaw = Math.sin(yaw);
+        const proj = points.map(p => {
+            let vx = p.x - center.x, vy = p.y - center.y, vz = p.z - center.z;
+            let vy2 = cP * vy - sP * vz, vz2 = sP * vy + cP * vz;
+            vy = vy2; vz = vz2;
+            let vx2 = cYaw * vx + sYaw * vz; vz2 = -sYaw * vx + cYaw * vz;
+            vx = vx2; vz = vz2;
+            let zCam = vz + camDist;
+            zCam = Math.max(1e-3, zCam);
+            return { x: vx / zCam, y: vy / zCam, z: zCam };
+        });
+        const segs = [];
+        for (let i = 0; i < proj.length - 1; i++) {
+            segs.push({ idx: i, z: (proj[i].z + proj[i+1].z) * 0.5 });
+        }
+        segs.sort((a, b) => b.z - a.z);
+        const rootW = 2.5, tipW = 0.5, taperPow = 1.6;
+        const cx = w * 0.5;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = color;
+        segs.forEach(item => {
+            const i = item.idx;
+            const t = i / Math.max(1, proj.length - 2);
+            const wPx = rootW + (tipW - rootW) * Math.pow(t, taperPow);
+            ctx.beginPath();
+            ctx.moveTo(proj[i].x * focal + cx, proj[i].y * focal + cy);
+            ctx.lineTo(proj[i+1].x * focal + cx, proj[i+1].y * focal + cy);
+            ctx.lineWidth = Math.max(0.5, wPx);
+            ctx.stroke();
+        });
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(proj[0].x * focal + cx, proj[0].y * focal + cy, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    drawSpotlightBeam(ctx, w, spotX, spotY, spotR, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - 8, 0);
+        ctx.lineTo(w / 2 + 8, 0);
+        ctx.lineTo(spotX + spotR * 0.6, spotY);
+        ctx.lineTo(spotX - spotR * 0.6, spotY);
+        ctx.closePath();
+        const beamGrad = ctx.createLinearGradient(w / 2, 0, w / 2, spotY);
+        beamGrad.addColorStop(0, 'rgba(255,250,200,0.7)');
+        beamGrad.addColorStop(1, 'rgba(255,250,200,0)');
+        ctx.fillStyle = beamGrad;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+
+    drawSpotlightCircle(ctx, sx, sy, r, intensity) {
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+        grad.addColorStop(0, `rgba(255,250,220,${intensity})`);
+        grad.addColorStop(0.5, `rgba(255,250,220,${intensity * 0.35})`);
+        grad.addColorStop(1, 'rgba(255,250,220,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    async generate(name, onProgress) {
+        const W = this.W, H = this.H;
+        const ctx = this.offCtx;
+        const totalFrames = 72;
+        const delay = 83; // ~12fps
+
+        // Load gif.js worker via blob URL to avoid CORS issues
+        let workerUrl;
+        try {
+            const resp = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+            const txt = await resp.text();
+            workerUrl = URL.createObjectURL(new Blob([txt], { type: 'application/javascript' }));
+        } catch (e) {
+            throw new Error('无法加载 GIF 编码器，请检查网络连接');
+        }
+
+        const gif = new GIF({
+            workers: 2, quality: 10,
+            width: W, height: H,
+            workerScript: workerUrl,
+            repeat: 0
+        });
+
+        // Pre-generate confetti particles
+        const confetti = Array.from({ length: 60 }, (_, i) => ({
+            x: Math.random() * W,
+            y0: -15 - Math.random() * 400,
+            w: 4 + Math.random() * 8,
+            h: 3 + Math.random() * 5,
+            color: ['#ff3e3e','#ffe74c','#06d6a0','#118ab2','#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9a00','#c77dff'][i % 10],
+            vy: 3 + Math.random() * 5,
+            wobbleAmp: 8 + Math.random() * 15,
+            wobbleFreq: 0.04 + Math.random() * 0.06,
+            wobblePhase: Math.random() * Math.PI * 2,
+            rot: Math.random() * Math.PI,
+            rotV: 0.05 + Math.random() * 0.2
+        }));
+
+        // Seed a deterministic random for dust particles
+        let dustSeed = 42;
+        const dustRand = () => { dustSeed = (dustSeed * 16807 + 0) % 2147483647; return dustSeed / 2147483647; };
+
+        const hcy = H * 0.38; // Hair vertical center
+
+        for (let f = 0; f < totalFrames; f++) {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#080810';
+            ctx.fillRect(0, 0, W, H);
+
+            // Reset dust seed per frame for consistency
+            dustSeed = 42 + f * 7;
+
+            if (f < 18) {
+                // === Phase 1: Spotlight sweeping search ===
+                const t = f / 18;
+                const angle = t * Math.PI * 2.5;
+                const spotR = 65 + 25 * Math.sin(t * Math.PI);
+                const sx = W / 2 + Math.cos(angle) * (95 - t * 65);
+                const sy = hcy + Math.sin(angle * 0.8) * (70 - t * 50);
+
+                this.drawSpotlightBeam(ctx, W, sx, sy, spotR, 0.1 + t * 0.06);
+                this.drawSpotlightCircle(ctx, sx, sy, spotR, 0.7 + t * 0.25);
+
+                // Dust particles floating in beam
+                ctx.fillStyle = 'rgba(255,250,200,0.25)';
+                for (let d = 0; d < 10; d++) {
+                    const dx = sx + (dustRand() - 0.5) * spotR * 1.2;
+                    const dy = sy + (dustRand() - 0.5) * spotR * 0.6;
+                    ctx.beginPath();
+                    ctx.arc(dx, dy, 0.8 + dustRand() * 1.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+            } else if (f < 24) {
+                // === Phase 2: Spotlight locks on, hair fades in ===
+                const t = (f - 18) / 6;
+                const spotR = 80 + t * 55;
+
+                this.drawSpotlightBeam(ctx, W, W / 2, hcy, spotR, 0.15);
+                this.drawSpotlightCircle(ctx, W / 2, hcy, spotR, 0.85 + t * 0.15);
+
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, t * 1.6);
+                this.renderHairOnCtx(ctx, W, H, hcy, 0.6, 0.4, 1.0, '#1a1a1a');
+                ctx.restore();
+
+            } else if (f < 50) {
+                // === Phase 3: 360° rotation under spotlight ===
+                const t = (f - 24) / 26;
+                const yaw = 0.6 + t * Math.PI * 2;
+                const zoomVal = 1.0 + Math.sin(t * Math.PI) * 0.25;
+                const spotR = 130;
+
+                this.drawSpotlightBeam(ctx, W, W / 2, hcy, spotR, 0.1);
+                this.drawSpotlightCircle(ctx, W / 2, hcy, spotR, 0.95);
+                this.renderHairOnCtx(ctx, W, H, hcy, yaw, 0.35, zoomVal, '#111');
+
+            } else if (f < 56) {
+                // === Phase 4: 突脸 zoom rush ===
+                const t = (f - 50) / 6;
+                const eased = t * t;
+                const zoomVal = 1.25 + eased * 3.5;
+                const yaw = 0.6 + Math.PI * 2 + t * 0.3;
+                const shakeX = (dustRand() - 0.5) * t * 8;
+                const shakeY = (dustRand() - 0.5) * t * 8;
+
+                if (f === 50) {
+                    // Flash frame
+                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                    ctx.fillRect(0, 0, W, H);
+                } else {
+                    const bright = Math.min(80, eased * 100);
+                    ctx.fillStyle = `rgb(${8 + bright},${8 + bright},${16 + bright})`;
+                    ctx.fillRect(0, 0, W, H);
+                }
+
+                const spotR = 130 + eased * 120;
+                this.drawSpotlightCircle(ctx, W / 2, hcy, spotR, 1);
+
+                ctx.save();
+                ctx.translate(shakeX, shakeY);
+                this.renderHairOnCtx(ctx, W, H, hcy, yaw, 0.3, zoomVal, '#000');
+                ctx.restore();
+
+            } else {
+                // === Phase 5: Confetti + text reveal ===
+                const phaseLen = totalFrames - 56;
+                const t = (f - 56) / phaseLen;
+                const elapsed = f - 56;
+
+                // Dramatic gradient background
+                const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+                bgGrad.addColorStop(0, '#1a0a2e');
+                bgGrad.addColorStop(0.5, '#16213e');
+                bgGrad.addColorStop(1, '#0f3460');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, W, H);
+
+                // Golden glow behind hair
+                const glowGrad = ctx.createRadialGradient(W / 2, hcy, 0, W / 2, hcy, 160);
+                glowGrad.addColorStop(0, 'rgba(255,215,0,0.35)');
+                glowGrad.addColorStop(0.5, 'rgba(255,215,0,0.08)');
+                glowGrad.addColorStop(1, 'rgba(255,215,0,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(W / 2, hcy, 160, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Hair (zoomed, light color against dark bg)
+                this.renderHairOnCtx(ctx, W, H, hcy, 0.6 + elapsed * 0.03, 0.4, 1.4, '#eee');
+
+                // Sparkle stars around hair
+                const textAlpha = Math.min(1, t * 3);
+                for (let s = 0; s < 8; s++) {
+                    const sa = (s / 8) * Math.PI * 2 + elapsed * 0.12;
+                    const sr = 75 + Math.sin(elapsed * 0.3 + s) * 20;
+                    const sparkX = W / 2 + Math.cos(sa) * sr;
+                    const sparkY = hcy + Math.sin(sa) * sr * 0.6;
+                    const sparkAlpha = (0.4 + 0.6 * Math.sin(elapsed * 0.5 + s * 1.3)) * textAlpha;
+                    ctx.save();
+                    ctx.globalAlpha = sparkAlpha;
+                    ctx.fillStyle = '#ffd700';
+                    const ss = 3 + Math.sin(elapsed * 0.3 + s) * 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(sparkX, sparkY - ss * 2);
+                    ctx.lineTo(sparkX + ss * 0.5, sparkY - ss * 0.5);
+                    ctx.lineTo(sparkX + ss * 2, sparkY);
+                    ctx.lineTo(sparkX + ss * 0.5, sparkY + ss * 0.5);
+                    ctx.lineTo(sparkX, sparkY + ss * 2);
+                    ctx.lineTo(sparkX - ss * 0.5, sparkY + ss * 0.5);
+                    ctx.lineTo(sparkX - ss * 2, sparkY);
+                    ctx.lineTo(sparkX - ss * 0.5, sparkY - ss * 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // Confetti rain
+                confetti.forEach(c => {
+                    const cfy = c.y0 + c.vy * elapsed * 4;
+                    const cfx = c.x + Math.sin(c.wobblePhase + elapsed * c.wobbleFreq) * c.wobbleAmp;
+                    if (cfy > -20 && cfy < H + 20) {
+                        ctx.save();
+                        ctx.translate(cfx, cfy);
+                        ctx.rotate(c.rot + elapsed * c.rotV);
+                        ctx.fillStyle = c.color;
+                        ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+                        ctx.restore();
+                    }
+                });
+
+                // Big text with bounce entrance
+                const bounceT = Math.min(1, t * 2.5);
+                const bounce = bounceT < 0.5
+                    ? 4 * bounceT * bounceT * bounceT
+                    : 1 - Math.pow(-2 * bounceT + 2, 3) / 2;
+                const textScale = 0.3 + bounce * 0.7;
+
+                ctx.save();
+                ctx.translate(W / 2, H * 0.82);
+                ctx.scale(textScale, textScale);
+                ctx.globalAlpha = textAlpha;
+
+                // Auto-fit font size to canvas width
+                const fullText = `${name}的屌毛`;
+                const fontFamily = '"Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif';
+                const maxW = W - 32; // padding
+                let fontSize = 38;
+                ctx.font = `bold ${fontSize}px ${fontFamily}`;
+                while (ctx.measureText(fullText).width > maxW && fontSize > 14) {
+                    fontSize -= 2;
+                    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+                }
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Golden glow text
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 25;
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText(`${name}的屌毛`, 0, 0);
+
+                // White overlay text
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(`${name}的屌毛`, 0, 0);
+                ctx.restore();
+            }
+
+            gif.addFrame(ctx, { copy: true, delay: delay });
+            if (onProgress) onProgress((f + 1) / totalFrames * 0.7);
+        }
+
+        return new Promise((resolve, reject) => {
+            gif.on('progress', p => { if (onProgress) onProgress(0.7 + p * 0.3); });
+            gif.on('finished', blob => {
+                URL.revokeObjectURL(workerUrl);
+                this.gifBlob = blob;
+                resolve(blob);
+            });
+            gif.on('error', reject);
+            gif.render();
+        });
+    }
+}
+
+function initShareUI(app) {
+    const shareGen = new ShareGenerator(app);
+    const modal = document.getElementById('shareModal');
+    const nameInput = document.getElementById('shareNameInput');
+    const genBtn = document.getElementById('shareGenBtn');
+    const saveBtn = document.getElementById('shareSaveBtn');
+    const closeBtn = document.getElementById('shareCloseBtn');
+    const preview = document.getElementById('sharePreview');
+    const previewImg = document.getElementById('sharePreviewImg');
+    const progress = document.getElementById('shareProgress');
+    const progressBar = document.getElementById('shareProgressBar');
+    const progressText = document.getElementById('shareProgressText');
+    const statusText = document.getElementById('shareStatusText');
+
+    function openModal() {
+        modal.classList.add('active');
+        nameInput.value = '';
+        nameInput.focus();
+        genBtn.classList.remove('hidden');
+        genBtn.disabled = false;
+        genBtn.textContent = '🎬 生成 GIF';
+        saveBtn.classList.add('hidden');
+        preview.classList.add('hidden');
+        progress.classList.add('hidden');
+        progressBar.style.width = '0%';
+        progressText.textContent = '0%';
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+    }
+
+    document.getElementById('btnShare').addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    genBtn.addEventListener('click', async () => {
+        const name = nameInput.value.trim();
+        if (!name) {
+            nameInput.style.borderColor = '#ef4444';
+            nameInput.focus();
+            setTimeout(() => nameInput.style.borderColor = '', 1500);
+            return;
+        }
+
+        genBtn.disabled = true;
+        genBtn.textContent = '生成中...';
+        progress.classList.remove('hidden');
+        preview.classList.add('hidden');
+        saveBtn.classList.add('hidden');
+
+        try {
+            const blob = await shareGen.generate(name, p => {
+                const pct = Math.round(p * 100);
+                progressBar.style.width = pct + '%';
+                progressText.textContent = pct + '%';
+                statusText.textContent = p < 0.7 ? '正在渲染动画帧...' : '正在编码 GIF...';
+            });
+
+            const url = URL.createObjectURL(blob);
+            previewImg.src = url;
+            preview.classList.remove('hidden');
+            progress.classList.add('hidden');
+            genBtn.classList.add('hidden');
+            saveBtn.classList.remove('hidden');
+
+            saveBtn.onclick = () => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${name}的屌毛.gif`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+        } catch (e) {
+            console.error(e);
+            statusText.textContent = '生成失败: ' + e.message;
+            genBtn.disabled = false;
+            genBtn.textContent = '🎬 重新生成';
+        }
+    });
+}
+
 // Start App
 window.onload = () => {
-    new App();
+    const app = new App();
+    initShareUI(app);
 };
 </script>
 </body>
