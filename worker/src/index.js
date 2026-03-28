@@ -70,7 +70,7 @@ export default {
                 {
                     ok: true,
                     app: {
-                        name: "lulu-world",
+                        name: "month-pass-simulator",
                         version: env.APP_VERSION || "2026-03-28",
                         aiEnabled: false
                     },
@@ -78,10 +78,9 @@ export default {
                         health: "/api/health",
                         futureAiBase: "/api/ai"
                     },
-                    performance: {
-                        targetFpsDesktop: 45,
-                        targetFpsMobile: 30,
-                        idleFps: 12
+                    features: {
+                        runtimeConfig: true,
+                        singlePageGame: true
                     }
                 },
                 200,
