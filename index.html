@@ -206,10 +206,13 @@
                 </div>
             </div>
 
-            <div id="history-container" class="history-panel custom-scroll" hidden>
-                <h3 class="history-title">约会记录复盘</h3>
-                <div id="history-list"></div>
-            </div>
+            <details id="history-container" class="history-panel" hidden open>
+                <summary class="history-toggle">
+                    <span class="history-title">约会记录复盘</span>
+                    <span class="history-toggle__meta">点击展开 / 收起</span>
+                </summary>
+                <div id="history-list" class="history-list custom-scroll"></div>
+            </details>
 
             <div class="feedback-actions">
                 <button id="next-btn" class="button button--primary" type="button">继续</button>

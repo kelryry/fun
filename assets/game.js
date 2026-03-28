@@ -171,6 +171,11 @@
         dom.feedbackIcon.textContent = "";
         dom.feedbackMessage.innerHTML = "";
         dom.diseaseContent.innerHTML = "";
+
+        if (dom.historyContainer) {
+            dom.historyContainer.open = true;
+        }
+
         setHidden(dom.diseaseReport, true);
         setHidden(dom.historyContainer, true);
         setHidden(dom.nextButton, false);
@@ -807,6 +812,7 @@
         }
 
         renderHistoryList();
+        dom.historyContainer.open = true;
         setHidden(dom.historyContainer, false);
         setHidden(dom.nextButton, true);
         setHidden(dom.restartButton, false);
@@ -825,6 +831,7 @@
             getStatsHTML();
 
         renderHistoryList();
+        dom.historyContainer.open = true;
         setHidden(dom.historyContainer, false);
         setHidden(dom.nextButton, true);
         setHidden(dom.restartButton, false);
