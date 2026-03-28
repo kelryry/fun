@@ -73,9 +73,25 @@
         element.hidden = hidden;
     }
 
+    function setText(element, value) {
+        if (!element) {
+            return;
+        }
+
+        element.textContent = value;
+    }
+
+    function setWidth(element, value) {
+        if (!element) {
+            return;
+        }
+
+        element.style.width = value;
+    }
+
     function updateBuildStatus(mode, detail) {
-        dom.buildChip.textContent = mode;
-        dom.runtimeNote.textContent = detail;
+        setText(dom.buildChip, mode);
+        setText(dom.runtimeNote, detail);
     }
 
     async function loadRuntimeConfig() {
@@ -328,13 +344,16 @@
     }
 
     function updateStatsUI() {
-        dom.frustrationBar.style.width = `${state.frustration}%`;
-        dom.frustrationValue.textContent = `${state.frustration}%`;
-        dom.anxietyBar.style.width = `${state.anxiety}%`;
-        dom.anxietyValue.textContent = `${state.anxiety}%`;
-        dom.turnCount.textContent = String(state.turn).padStart(2, "0");
-        dom.testkitCount.textContent = `x${state.items.testkit}`;
-        dom.testkitCount.classList.toggle("is-empty", state.items.testkit === 0);
+        setWidth(dom.frustrationBar, `${state.frustration}%`);
+        setText(dom.frustrationValue, `${state.frustration}%`);
+        setWidth(dom.anxietyBar, `${state.anxiety}%`);
+        setText(dom.anxietyValue, `${state.anxiety}%`);
+        setText(dom.turnCount, String(state.turn).padStart(2, "0"));
+        setText(dom.testkitCount, `x${state.items.testkit}`);
+
+        if (dom.testkitCount) {
+            dom.testkitCount.classList.toggle("is-empty", state.items.testkit === 0);
+        }
 
         if (state.anxiety >= 80) {
             dom.gameContent.classList.add("panic-mode");

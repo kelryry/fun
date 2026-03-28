@@ -103,6 +103,14 @@ body::after {
     min-width: 0;
 }
 
+.panel-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
 .panel-brand h1 {
     margin: 0;
     font-size: 1.5rem;
@@ -128,8 +136,6 @@ body::after {
 }
 
 .build-chip {
-    flex-shrink: 0;
-    align-self: flex-start;
     padding: 8px 12px;
     border-radius: 999px;
     background: rgba(51, 65, 85, 0.9);
@@ -138,6 +144,34 @@ body::after {
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.04em;
+}
+
+.turn-chip {
+    min-width: 74px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.84);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    text-align: right;
+}
+
+.turn-chip__label {
+    display: block;
+    color: var(--muted);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.turn-chip__value {
+    display: block;
+    margin-top: 2px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
 }
 
 .stats-panel {
@@ -1194,6 +1228,10 @@ body::after {
     .panel-header {
         padding-top: 18px;
         padding-bottom: 18px;
+    }
+
+    .panel-meta {
+        gap: 6px;
     }
 
     .quick-actions,
