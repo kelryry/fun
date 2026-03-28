@@ -1,0 +1,20 @@
+{
+  "name": "fun-edge-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-03-28",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_ENV": "production",
+    "APP_VERSION": "2026-03-28"
+  },
+  // Add routes after your Pages custom domain is confirmed.
+  // Example:
+  // "routes": [
+  //   {
+  //     "pattern": "example.com/api/*",
+  //     "zone_name": "example.com"
+  //   }
+  // ]
+}
