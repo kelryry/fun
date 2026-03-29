@@ -37,8 +37,8 @@
         ]
       },
       "modeButtons": {
-        "male": "男生视角",
-        "female": "女生视角"
+        "male": "今晚，我是男生",
+        "female": "今晚，我是女生"
       },
       "helpButton": "玩法"
     },

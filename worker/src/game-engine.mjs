@@ -2024,8 +2024,8 @@ async function polishChatEvent(event, run, env) {
     );
 
     // event.lines[0] was the chat text, we'll replace it entirely below
-    if (typeof response?.insight === "string" && response.insight.trim()) {
-        const insight = response.insight.trim();
+    const insight = response?.insight?.trim() || response?.text?.trim();
+    if (insight) {
         event.aiInsight = insight;
         // 彻底替换 event.lines，只展示AI心理剖析，移除任何程序生成的对话
         event.lines = [{ tone: "warning", text: "💭 " + insight }];

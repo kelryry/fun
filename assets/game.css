@@ -594,8 +594,9 @@ textarea {
     width: min(100%, 720px);
     max-height: min(92dvh, 860px);
     padding: 10px;
-    display: grid;
-    gap: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .intro-panel {
@@ -696,10 +697,12 @@ textarea {
 
 .modal-scroll,
 .feedback-copy {
+    flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow-y: auto;
     display: grid;
     gap: 6px;
+    align-content: start;
 }
 
 .help-section,

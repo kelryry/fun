@@ -701,11 +701,12 @@
             setHidden(dom.criticalReason, false);
         }
 
-        renderUnlocks(addedUnlocks);
         if (uiState.gameOver) {
+            renderUnlocks(addedUnlocks);
             renderHistoryList(uiState.history || []);
             setHidden(dom.reviewButton, false);
         } else {
+            renderUnlocks([]);
             dom.historyList.innerHTML = "";
             setHidden(dom.reviewButton, true);
         }
