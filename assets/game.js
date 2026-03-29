@@ -8,8 +8,6 @@
 
     const { CONFIG, AVATARS, DISEASES, FLIRT_LINES, ALL_TAGS } = data;
     const state = {
-        started: false,
-        feedbackVisible: false,
         frustration: CONFIG.startFrustration,
         anxiety: 0,
         turn: 1,
@@ -26,10 +24,11 @@
 
     const dom = {
         body: document.body,
-        introSection: document.getElementById("intro-section"),
-        gamePanel: document.getElementById("game-panel"),
-        playPanel: document.getElementById("play-panel"),
-        resultPanel: document.getElementById("result-panel"),
+        gameContainer: document.getElementById("game-container"),
+        gameContent: document.getElementById("game-content"),
+        introModal: document.getElementById("intro-modal"),
+        helpModal: document.getElementById("help-modal"),
+        feedbackOverlay: document.getElementById("feedback-overlay"),
         frustrationBar: document.getElementById("frustration-bar"),
         frustrationValue: document.getElementById("frustration-val"),
         anxietyBar: document.getElementById("anxiety-bar"),
@@ -54,6 +53,8 @@
         buildChip: document.getElementById("build-chip"),
         runtimeNote: document.getElementById("runtime-note"),
         startButton: document.getElementById("start-game-btn"),
+        helpOpenButton: document.getElementById("open-help-btn"),
+        helpCloseButtons: document.querySelectorAll("[data-close-help]"),
         hospitalButton: document.getElementById("go-hospital-btn"),
         testkitButton: document.getElementById("use-testkit-btn"),
         actionButtons: Array.from(document.querySelectorAll("[data-action]"))
@@ -82,29 +83,12 @@
         element.textContent = value;
     }
 
-    function setHTML(element, value) {
-        if (!element) {
-            return;
-        }
-
-        element.innerHTML = value;
-    }
-
     function setWidth(element, value) {
         if (!element) {
             return;
         }
 
         element.style.width = value;
-    }
-
-    function setButtonState(button, disabled) {
-        if (!button) {
-            return;
-        }
-
-        button.disabled = disabled;
-        button.classList.toggle("is-disabled", disabled);
     }
 
     function updateBuildStatus(mode, detail) {
@@ -146,6 +130,17 @@
 
     function bindEvents() {
         dom.startButton.addEventListener("click", startGame);
+        dom.helpOpenButton.addEventListener("click", () => toggleHelp(true));
+        dom.helpModal.addEventListener("click", (event) => {
+            if (event.target === dom.helpModal) {
+                toggleHelp(false);
+            }
+        });
+
+        dom.helpCloseButtons.forEach((button) => {
+            button.addEventListener("click", () => toggleHelp(false));
+        });
+
         dom.testkitButton.addEventListener("click", () => useItem("testkit"));
         dom.hospitalButton.addEventListener("click", goToHospital);
 
@@ -155,7 +150,9 @@
 
         dom.nextButton.addEventListener("click", () => {
             if (state.nextButtonMode === "close") {
-                hideResultPanel();
+                setHidden(dom.feedbackOverlay, true);
+                state.nextButtonMode = "continue";
+                dom.nextButton.textContent = "继续";
                 return;
             }
 
@@ -165,66 +162,54 @@
         dom.restartButton.addEventListener("click", returnToIntro);
     }
 
-    function updateSessionVisibility() {
-        setHidden(dom.introSection, state.started);
-        setHidden(dom.gamePanel, !state.started);
+    function toggleHelp(force) {
+        const shouldShow = typeof force === "boolean" ? force : dom.helpModal.hidden;
+        setHidden(dom.helpModal, !shouldShow);
     }
 
-    function resetResultState() {
+    function resetFeedbackState() {
+        dom.feedbackTitle.dataset.tone = "default";
+        dom.feedbackTitle.textContent = "";
+        dom.feedbackIcon.textContent = "";
+        dom.feedbackMessage.innerHTML = "";
+        dom.diseaseContent.innerHTML = "";
+
         if (dom.historyContainer) {
             dom.historyContainer.open = true;
         }
 
-        dom.resultPanel.dataset.tone = "default";
-        setText(dom.feedbackTitle, "");
-        setText(dom.feedbackIcon, "ℹ️");
-        setHTML(dom.feedbackMessage, "");
-        setHTML(dom.diseaseContent, "");
         setHidden(dom.diseaseReport, true);
         setHidden(dom.historyContainer, true);
         setHidden(dom.nextButton, false);
         setHidden(dom.restartButton, true);
-        setText(dom.nextButton, "继续");
+        dom.nextButton.textContent = "继续";
         state.nextButtonMode = "continue";
     }
 
-    function showResultPanel() {
-        state.feedbackVisible = true;
-        setHidden(dom.resultPanel, false);
-        syncControls();
-        dom.resultPanel.scrollIntoView({ block: "start" });
-    }
-
-    function hideResultPanel() {
-        state.feedbackVisible = false;
-        resetResultState();
-        setHidden(dom.resultPanel, true);
-        syncControls();
-    }
-
     function startGame() {
-        state.started = true;
-        updateSessionVisibility();
+        setHidden(dom.introModal, true);
+        setHidden(dom.gameContainer, false);
         initGame();
-        dom.gamePanel.scrollIntoView({ block: "start" });
     }
 
     function returnToIntro() {
-        state.started = false;
-        state.feedbackVisible = false;
         state.frustration = CONFIG.startFrustration;
         state.anxiety = 0;
         state.turn = 1;
         state.items = { testkit: 1 };
-        state.isGameOver = false;
         state.currentPartner = null;
+        state.isInfected = false;
+        state.infectionData = null;
+        state.isGameOver = false;
+        state.history = [];
         state.partnerFlagged = false;
-        resetResultState();
-        setHidden(dom.resultPanel, true);
+
+        resetFeedbackState();
         updateStatsUI();
-        updateSessionVisibility();
-        syncControls();
-        window.scrollTo(0, 0);
+        setHidden(dom.feedbackOverlay, true);
+        setHidden(dom.gameContainer, true);
+        setHidden(dom.helpModal, true);
+        setHidden(dom.introModal, false);
     }
 
     function initGame() {
@@ -239,11 +224,9 @@
         state.history = [];
         state.partnerFlagged = false;
 
-        resetResultState();
-        setHidden(dom.resultPanel, true);
+        resetFeedbackState();
         updateStatsUI();
         generateNewPartner();
-        syncControls();
     }
 
     function getTagTone(tag) {
@@ -376,8 +359,7 @@
         state.currentPartner = {
             tags: partnerTags,
             diseases: activeDiseases,
-            avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],
-            flirtLine: FLIRT_LINES[Math.floor(Math.random() * FLIRT_LINES.length)]
+            avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)]
         };
 
         renderPartner();
@@ -395,9 +377,13 @@
             dom.testkitCount.classList.toggle("is-empty", state.items.testkit === 0);
         }
 
-        const isPanic = state.anxiety >= 80;
-        dom.gamePanel.classList.toggle("is-panic", isPanic);
-        setHidden(dom.panicWarning, !isPanic);
+        if (state.anxiety >= 80) {
+            dom.gameContent.classList.add("panic-mode");
+            setHidden(dom.panicWarning, false);
+        } else {
+            dom.gameContent.classList.remove("panic-mode");
+            setHidden(dom.panicWarning, true);
+        }
     }
 
     function resetActionButtons() {
@@ -408,7 +394,8 @@
                 return;
             }
 
-            button.dataset.restricted = "false";
+            button.disabled = false;
+            button.classList.remove("is-disabled");
 
             const overlay = button.querySelector(".action-lock");
             if (overlay) {
@@ -420,15 +407,12 @@
     function disableActionButton(id) {
         const button = document.getElementById(id);
 
-        if (!button) {
+        if (!button || button.disabled) {
             return;
         }
 
-        button.dataset.restricted = "true";
-
-        if (button.querySelector(".action-lock")) {
-            return;
-        }
+        button.disabled = true;
+        button.classList.add("is-disabled");
 
         const overlay = document.createElement("span");
         overlay.className = "action-lock";
@@ -454,45 +438,26 @@
         });
     }
 
-    function syncControls() {
-        const locked = !state.started || state.feedbackVisible || state.isGameOver || !state.currentPartner;
-        const chatUnavailable = dom.chatButton.dataset.chatAvailable !== "true";
-
-        setButtonState(dom.testkitButton, locked || state.items.testkit <= 0);
-        setButtonState(dom.hospitalButton, locked);
-
-        dom.actionButtons.forEach((button) => {
-            const restricted = button.dataset.restricted === "true";
-            const disableForChat = button.dataset.action === "chat" && chatUnavailable;
-            setButtonState(button, locked || restricted || disableForChat);
-        });
-    }
-
     function renderPartner() {
         const partner = state.currentPartner;
-
-        if (!partner) {
-            return;
-        }
-
         const container = dom.tagsContainer;
         const constraints = [];
         const isPanic = state.anxiety >= 80;
         let hiddenCount = 0;
 
         setText(dom.avatarEmoji, partner.avatar);
-        setText(dom.flirtText, `"${partner.flirtLine}"`);
+        setText(dom.flirtText, `"${FLIRT_LINES[Math.floor(Math.random() * FLIRT_LINES.length)]}"`);
         setHidden(dom.partnerStatus, !state.partnerFlagged);
         container.innerHTML = "";
 
         partner.tags.forEach((tag) => {
-            const forceHide = isPanic && tag.revealed && Math.random() < 0.5;
+            const forceHide = isPanic && Math.random() < 0.5;
             const chip = document.createElement("div");
 
             if (!tag.revealed || forceHide) {
                 hiddenCount += 1;
                 chip.className = "tag tag--hidden";
-                chip.innerHTML = isPanic ? "<span>视线受限</span>" : "<span>❓ 隐藏信息</span>";
+                chip.innerHTML = isPanic ? "<span class=\"tag-blur\">???</span>" : "<span>❓</span> 隐藏信息";
             } else {
                 if (tag.constraint) {
                     constraints.push(tag.constraint);
@@ -511,16 +476,15 @@
             applyConstraints(constraints);
         }
 
-        const canChat = hiddenCount > 0 || isPanic;
-        dom.chatButton.dataset.chatAvailable = canChat ? "true" : "false";
-
-        if (canChat) {
-            dom.chatButton.innerHTML = "<span>💬 试探 / 聊天</span><span class=\"button-note\">压抑值 +3</span>";
+        if (hiddenCount === 0 && !isPanic) {
+            dom.chatButton.disabled = true;
+            dom.chatButton.classList.add("is-disabled");
+            dom.chatButton.innerHTML = "<span>💬</span><span>已完全了解</span>";
         } else {
-            dom.chatButton.innerHTML = "<span>💬 已完全了解</span><span class=\"button-note\">无需继续试探</span>";
+            dom.chatButton.disabled = false;
+            dom.chatButton.classList.remove("is-disabled");
+            dom.chatButton.innerHTML = "<span>💬</span><span>试探 / 聊天</span><span class=\"button-note\">压抑值+3</span>";
         }
-
-        syncControls();
     }
 
     function advanceTime(frustrationDelta, anxietyDelta = 0) {
@@ -545,7 +509,7 @@
         if (state.frustration >= 100) {
             showGameOver(
                 "欲火焚身",
-                "长期的压抑让你彻底失去理智。你无法再评估后果，在绝望中发生了一次随机的高危行为。",
+                "长期的压抑让你彻底失去了理智。你无法再思考后果，在绝望中发生了一次随机的高危行为。",
                 "🤯"
             );
             return true;
@@ -554,8 +518,8 @@
         if (state.anxiety >= 100) {
             showGameOver(
                 "精神崩溃",
-                "巨大的心理压力压垮了你。你开始出现严重应激反应，被送往精神科观察。",
-                "😵"
+                "巨大的心理压力压垮了你。你开始出现幻觉，被送往了精神病院，游戏结束。",
+                "😵‍💫"
             );
             return true;
         }
@@ -631,7 +595,7 @@
     }
 
     function useItem(type) {
-        if (type !== "testkit" || state.items.testkit <= 0 || !state.currentPartner || state.feedbackVisible || state.isGameOver) {
+        if (type !== "testkit" || state.items.testkit <= 0 || !state.currentPartner) {
             return;
         }
 
@@ -656,16 +620,12 @@
             tag.revealed = true;
         });
 
-        updateStatsUI();
         renderPartner();
-        showFeedback("检测结果", message, icon, true, partner.diseases.length > 0 ? "danger" : "success");
+        updateStatsUI();
+        showFeedback("检测结果", message, icon, true);
     }
 
     function goToHospital() {
-        if (!state.currentPartner || state.feedbackVisible || state.isGameOver) {
-            return;
-        }
-
         const survived = !advanceTime(CONFIG.hospitalCost, 0);
 
         if (!survived) {
@@ -674,12 +634,11 @@
 
         state.anxiety = 0;
         updateStatsUI();
-        renderPartner();
 
         if (state.isInfected) {
             showGameOver(
                 "确诊感染",
-                "医院检查结果显示你已经感染。之前的侥幸最终没有救你。",
+                "很遗憾，医院的检查结果显示你已感染。<br>之前的侥幸心理终究没能救你。",
                 "🏥",
                 state.infectionData
             );
@@ -688,20 +647,20 @@
 
         showFeedback(
             "虚惊一场",
-            "<span class=\"u-success\">检测结果阴性。</span><br>你身体仍然健康，但也为这次检查付出了额外回合成本。",
+            "<span class=\"u-success\">检测结果阴性。</span><br>你身体是健康的。心理压力已清空，但你也为此浪费了宝贵的时间。",
             "🏥",
-            true,
-            "success"
+            true
         );
     }
 
     function nextTurn() {
-        hideResultPanel();
+        setHidden(dom.feedbackOverlay, true);
+        resetFeedbackState();
         generateNewPartner();
     }
 
     function takeAction(actionType) {
-        if (state.feedbackVisible || state.isGameOver || !state.currentPartner || state.frustration >= 100 || state.anxiety >= 100) {
+        if (state.frustration >= 100 || state.anxiety >= 100 || !state.currentPartner) {
             return;
         }
 
@@ -728,7 +687,7 @@
             recordHistory("refuse", false);
 
             if (!advanceTime(CONFIG.passiveGain + CONFIG.refuseCost, 0)) {
-                showFeedback("继续寻找", "你选择了离开。压抑值上升，但至少暂时保持了安全。", "🏃", false, "default");
+                showFeedback("继续寻找", "你选择了离开。压抑值上升，但至少你暂时是安全的。", "🏃");
             }
             return;
         }
@@ -784,7 +743,7 @@
             if (state.isInfected) {
                 showGameOver(
                     "糟糕的胜利",
-                    "你的压抑值清零了，身体却开始在几天后出现异常。欲望得到了释放，健康却输掉了。",
+                    "你的压抑值清零了，你感到无比轻松...<br>但在几天后，你的身体开始出现异常反应。<br>你虽然释放了欲望，却输掉了健康。",
                     "🥀",
                     state.infectionData
                 );
@@ -796,22 +755,20 @@
 
         let title = "宣泄与不安";
         let icon = "🍬";
-        let tone = "default";
         let message = `欲望得到了释放。<br>生理压抑 <span class="u-success">-${reduction}</span>`;
 
         if (anxietyGain > 5) {
             message += `<br>心理压力 <span class="u-warning">+${anxietyGain}</span>`;
             icon = "😰";
-            tone = "danger";
         }
 
         if (state.isInfected) {
-            message += "<br><span class=\"u-muted\">你感觉到一丝异样，但也许只是错觉。</span>";
+            message += "<br><span class=\"u-muted\">你感觉到了一丝异样，但也许只是错觉...？</span>";
         } else if (partner.diseases.length > 0) {
-            message += "<br><span class=\"u-muted\">过程很惊险，但你这次似乎躲过去了。</span>";
+            message += "<br><span class=\"u-muted\">虽然过程很惊险，但你似乎运气不错...暂时。</span>";
         }
 
-        showFeedback(title, message, icon, false, tone);
+        showFeedback(title, message, icon);
     }
 
     function getStatsHTML() {
@@ -833,7 +790,7 @@
 
         return `
             <div class="summary-stats">
-                <h3 class="summary-stats__title">生涯统计</h3>
+                <h4 class="summary-stats__title">生涯统计</h4>
                 <div class="summary-stats__grid">
                     <div class="summary-stats__row"><span>✅ 理智享受</span><strong>${counts.enjoy}</strong></div>
                     <div class="summary-stats__row"><span>🛡️ 正确离开</span><strong>${counts.leave}</strong></div>
@@ -849,31 +806,30 @@
         `;
     }
 
-    function showFeedback(title, message, icon, isSimpleAlert = false, tone = "default") {
-        resetResultState();
-        dom.resultPanel.dataset.tone = tone;
-        setText(dom.feedbackTitle, title);
-        setText(dom.feedbackIcon, icon);
-        setHTML(dom.feedbackMessage, message);
+    function showFeedback(title, message, icon, isSimpleAlert = false) {
+        resetFeedbackState();
+        dom.feedbackTitle.textContent = title;
+        dom.feedbackIcon.textContent = icon;
+        dom.feedbackMessage.innerHTML = message;
+        setHidden(dom.feedbackOverlay, false);
 
         if (isSimpleAlert) {
             state.nextButtonMode = "close";
-            setText(dom.nextButton, "关闭");
+            dom.nextButton.textContent = "关闭";
         }
-
-        showResultPanel();
     }
 
     function showGameOver(title, message, icon, disease = null) {
         state.isGameOver = true;
-        resetResultState();
-        dom.resultPanel.dataset.tone = "danger";
-        setText(dom.feedbackTitle, title);
-        setText(dom.feedbackIcon, icon);
-        setHTML(dom.feedbackMessage, message + getStatsHTML());
+        resetFeedbackState();
+
+        dom.feedbackTitle.textContent = title;
+        dom.feedbackTitle.dataset.tone = "danger";
+        dom.feedbackIcon.textContent = icon;
+        dom.feedbackMessage.innerHTML = message + getStatsHTML();
 
         if (disease) {
-            setHTML(dom.diseaseContent, `<p><b>确诊：</b>${disease.name}</p><p><b>途径：</b>${disease.transmission}</p>`);
+            dom.diseaseContent.innerHTML = `<p><b>确诊：</b>${disease.name}</p><p><b>途径：</b>${disease.transmission}</p>`;
             setHidden(dom.diseaseReport, false);
         }
 
@@ -882,30 +838,28 @@
         setHidden(dom.historyContainer, false);
         setHidden(dom.nextButton, true);
         setHidden(dom.restartButton, false);
-        showResultPanel();
+        setHidden(dom.feedbackOverlay, false);
     }
 
     function showWin() {
         state.isGameOver = true;
-        resetResultState();
-        dom.resultPanel.dataset.tone = "success";
-        setText(dom.feedbackTitle, "幸存者");
-        setText(dom.feedbackIcon, "✨");
-        setHTML(
-            dom.feedbackMessage,
-            "你成功清零了压抑值，且身体健康。<br><br>在这场充满迷雾和风险的游戏里，你靠着谨慎、策略和一点运气活了下来。" + getStatsHTML()
-        );
+        resetFeedbackState();
+
+        dom.feedbackTitle.textContent = "幸存者";
+        dom.feedbackTitle.dataset.tone = "success";
+        dom.feedbackIcon.textContent = "✨";
+        dom.feedbackMessage.innerHTML =
+            "你成功清零了压抑值，且身体健康。<br><br>在这场充满迷雾和风险的游戏中，你靠着谨慎、策略和一点运气活了下来。" +
+            getStatsHTML();
 
         renderHistoryList();
         dom.historyContainer.open = true;
         setHidden(dom.historyContainer, false);
         setHidden(dom.nextButton, true);
         setHidden(dom.restartButton, false);
-        showResultPanel();
+        setHidden(dom.feedbackOverlay, false);
     }
 
     bindEvents();
-    updateSessionVisibility();
-    syncControls();
     await loadRuntimeConfig();
 })();
