@@ -1,0 +1,1235 @@
+{
+  "version": "2026-03-29-copy-v1",
+  "shell": {
+    "pageTitle": "月抛模拟器",
+    "intro": {
+      "title": "月抛模拟器",
+      "kicker": "先看人，再决定碰不碰",
+      "lines": [
+        "先试探，再决定碰不碰。",
+        "试纸给线索，医院给答案。"
+      ],
+      "runtime": {
+        "checking": {
+          "chip": "连线中",
+          "note": "正在连服务器。"
+        },
+        "online": {
+          "chip": "可开局",
+          "note": "服务器在线。"
+        },
+        "onlineAi": {
+          "chip": "可开局",
+          "note": "服务器在线，聊天更像人话了。"
+        },
+        "offline": {
+          "chip": "离线",
+          "note": "服务器没接上。"
+        },
+        "error": {
+          "chip": "断线",
+          "note": "服务器掉线了。"
+        },
+        "fatalTitle": "服务器中断",
+        "fatalLines": [
+          "这局断了。",
+          "回首页再开。"
+        ]
+      },
+      "modeButtons": {
+        "male": "男生视角",
+        "female": "女生视角"
+      },
+      "helpButton": "玩法"
+    },
+    "help": {
+      "title": "玩法",
+      "openCasebook": "案件簿",
+      "close": "知道了",
+      "sections": [
+        {
+          "title": "目标",
+          "lines": [
+            "压抑清零前，别把自己玩进医院。"
+          ]
+        },
+        {
+          "title": "怎么打",
+          "lines": [
+            "先试探，再决定碰不碰。",
+            "试纸给线索，医院给答案。"
+          ]
+        },
+        {
+          "title": "三种试探",
+          "lines": [
+            "套话：聊近况。",
+            "追问：抠时间线。",
+            "压边界：看底线。"
+          ]
+        },
+        {
+          "title": "怎么输",
+          "lines": [
+            "压抑满了。",
+            "压力满了。",
+            "医院或终局翻出感染。"
+          ]
+        }
+      ]
+    },
+    "casebook": {
+      "title": "案件簿",
+      "open": "案件簿",
+      "close": "收起",
+      "empty": "还没记下",
+      "unlock": "新增记录",
+      "sections": {
+        "personas": "人格",
+        "lieTypes": "话术",
+        "endings": "结局",
+        "diseases": "病原",
+        "titles": "称号"
+      },
+      "summary": {
+        "personas": "见过人格",
+        "lieTypes": "见过话术",
+        "endings": "打出结局",
+        "diseases": "确认病原",
+        "titles": "拿到称号"
+      }
+    },
+    "feedback": {
+      "historyTitle": "本轮复盘",
+      "historyToggle": "展开",
+      "next": "继续",
+      "restart": "返回首页",
+      "openCasebook": "案件簿",
+      "summaryTitle": "统计",
+      "summaryRows": {
+        "enjoy": "理智享受",
+        "leave": "正确离开",
+        "escape": "死里逃生",
+        "miss": "遗憾错过",
+        "infected": "被感染"
+      },
+      "summaryTurns": "回合",
+      "diseaseName": "确诊",
+      "diseaseRoute": "途径",
+      "carrier": "携带",
+      "healthy": "健康"
+    },
+    "battle": {
+      "turn": "回合",
+      "frustration": "压抑",
+      "anxiety": "压力",
+      "panic": "你有点乱。",
+      "cluesTitle": "线索",
+      "testkit": "试纸",
+      "testkitButton": "检测",
+      "hospital": "医院",
+      "hospitalNote": "+10 / 压力清零",
+      "scenePrefix": "场景",
+      "hiddenClue": "未露",
+      "chat": "试探",
+      "chatRemaining": "还剩 {count} 次",
+      "chatExhausted": "聊不动了",
+      "chatAsked": "问过了",
+      "chatSpent": "他懒得答了",
+      "chatPanelHint": "挑一个角度问。",
+      "locked": "对方拒绝",
+      "modeLabel": {
+        "male": "男生视角",
+        "female": "女生视角"
+      }
+    }
+  },
+  "ui": {
+    "chat": {
+      "smalltalk": {
+        "label": "套话",
+        "prompt": "聊近况"
+      },
+      "probe": {
+        "label": "追问",
+        "prompt": "抠时间线"
+      },
+      "boundary": {
+        "label": "压边界",
+        "prompt": "试底线"
+      }
+    },
+    "actions": {
+      "oral_condom": {
+        "title": "戴套口",
+        "note": "稳"
+      },
+      "sex_condom": {
+        "title": "戴套做",
+        "note": "主力"
+      },
+      "oral_raw": {
+        "title": "无套口",
+        "note": "冒险"
+      },
+      "sex_raw": {
+        "title": "无套做",
+        "note": "硬赌"
+      },
+      "refuse": {
+        "title": "换一个",
+        "note": "+8"
+      }
+    }
+  },
+  "content": {
+    "common": {
+      "personas": {
+        "cautious_rookie": "老实谨慎",
+        "slick_liar": "油滑老手",
+        "hard_deny": "嘴硬高危",
+        "fake_sweet": "假装纯情",
+        "edge_pusher": "急色压线",
+        "shy_clean": "社恐但安全"
+      },
+      "lieTypes": {
+        "honest": "真说",
+        "deflect": "打岔",
+        "half_truth": "半真半假",
+        "hard_deny": "死不认",
+        "charm_push": "哄你松口"
+      },
+      "endings": {
+        "survive": "幸存",
+        "bad_win": "糟糕的胜利",
+        "burnout": "欲火焚身",
+        "breakdown": "精神崩溃",
+        "confirmed_infection": "确诊感染"
+      },
+      "titles": {
+        "cold_hunter": "冷静猎手",
+        "contradiction_sniffer": "嘴硬鉴定师",
+        "raw_gambler": "赌命上头王",
+        "close_call": "死里逃生专业户",
+        "bad_luck_lover": "侥幸赌徒"
+      },
+      "diseases": {
+        "HIV": {
+          "name": "艾滋病 (HIV)",
+          "transmission": "体液传播"
+        },
+        "SYPHILIS": {
+          "name": "梅毒",
+          "transmission": "接触传播"
+        },
+        "HERPES": {
+          "name": "疱疹",
+          "transmission": "皮肤接触"
+        },
+        "HPV": {
+          "name": "尖锐湿疣",
+          "transmission": "接触传播"
+        },
+        "GONORRHEA": {
+          "name": "淋病",
+          "transmission": "体液粘膜"
+        },
+        "CRABS": {
+          "name": "阴虱",
+          "transmission": "密切接触"
+        }
+      },
+      "boundaries": {
+        "condom_only": {
+          "text": "只肯戴套",
+          "detail": "只接受全程戴套。"
+        },
+        "no_condom": {
+          "text": "一提套就皱眉",
+          "detail": "很抗拒戴套。"
+        },
+        "no_oral": {
+          "text": "不碰口",
+          "detail": "只接受非口部玩法。"
+        },
+        "oral_only": {
+          "text": "只肯边缘试探",
+          "detail": "只接受口或边缘玩法。"
+        }
+      },
+      "testHistory": {
+        "recent_clean": "上个月刚测过，还留着截图。",
+        "vague_safe": "说是前阵子测过，日期记不清了。",
+        "unknown": "一问检测时间就含糊。",
+        "recent_risk": "嘴上说没事，细问才发现这周换人很勤。"
+      },
+      "panicClues": {
+        "smalltalk": "你只记住：这人不太对劲。",
+        "probe": "你只记住：他在躲。",
+        "boundary": "你只记住：他底线不干净。"
+      },
+      "chatFeedback": {
+        "contradiction": "这句有矛盾。",
+        "panic": "你没抓住细节。"
+      },
+      "historyOutcomes": {
+        "leave": "正确离开",
+        "miss": "遗憾错过",
+        "escape": "死里逃生",
+        "infected": "被 ta 感染",
+        "enjoy": "理智享受"
+      },
+      "generatedClues": {
+        "visible": {
+          "high": [
+            {
+              "text": "他对风险这件事轻得有点反常。",
+              "tone": "warning"
+            },
+            {
+              "text": "他总把话往“别扫兴”上带。",
+              "tone": "risk"
+            },
+            {
+              "text": "他熟得让人不舒服。",
+              "tone": "warning"
+            }
+          ],
+          "safe": [
+            {
+              "text": "他先问你最近有没有做检测。",
+              "tone": "safe"
+            },
+            {
+              "text": "他对清洁和套都比你更上心。",
+              "tone": "safe"
+            },
+            {
+              "text": "他宁可慢一点，也不想乱来。",
+              "tone": "safe"
+            }
+          ],
+          "uncertain": [
+            {
+              "text": "第一眼挑不出大问题。",
+              "tone": "caution"
+            },
+            {
+              "text": "他的安全感有点像做出来的。",
+              "tone": "warning"
+            },
+            {
+              "text": "他看起来像很会说漂亮话的人。",
+              "tone": "caution"
+            }
+          ]
+        },
+        "probe": {
+          "honest": "他能直接说出：{detail}",
+          "hardDeny": "你一追检测时间，他就开始炸毛，只剩情绪没有信息。",
+          "halfTruth": "他说“应该没事”，但越问越像：{detail}",
+          "highRisk": "一聊到检测，他就露出破绽：{detail}",
+          "unknown": "他给了你一个模糊答案，更像：{detail}"
+        },
+        "boundary": {
+          "safe": "一聊到底线，他先把“戴套”放在最前面。",
+          "pressure": "你一压边界，他立刻把话往“别扫兴”“赌一把”上拐。",
+          "constraint": "他的底线很具体，不像在装。",
+          "mixed": "他嘴上说都行，但一提防护细节眼神就飘。"
+        }
+      },
+      "replyTemplates": {
+        "smalltalk": {
+          "safe": [
+            "我平时没这么疯，今晚算上头。",
+            "真不是天天出来找人滚床单。",
+            "今晚之前我都在忙自己的事。"
+          ],
+          "soft_safe": [
+            "我没你想得那么乱。",
+            "我可以说，但你别一口气盘太细。",
+            "有些事我不想摊得太明白。"
+          ],
+          "risky": [
+            "别问得像查岗。",
+            "我熟，不代表谁都上。",
+            "这种局我不是第一次。"
+          ],
+          "mixed": [
+            "我能说，但你别盯死细节。",
+            "我不是没见过人。",
+            "你真要听，我也不是不能聊。"
+          ]
+        },
+        "probe": {
+          "honest": [
+            "上次检测的时间地点我都说得出。",
+            "这事我不跟你打马虎眼。",
+            "检查做过，结果也对得上。"
+          ],
+          "honest_safe": [
+            "上次检测的时间地点我都说得出。",
+            "这事我不跟你打马虎眼。",
+            "检查做过，结果也对得上。"
+          ],
+          "hard_deny": [
+            "我没事，爱信不信。",
+            "你老追着检测问什么。",
+            "不放心你现在就走。"
+          ],
+          "half_truth": [
+            "前阵子测过吧，别揪着日期不放。",
+            "不是不说，是没必要一条条报账。",
+            "结果差不多是干净的。"
+          ],
+          "charm_push": [
+            "你先别这么紧。",
+            "你是来抓人还是来上床的。",
+            "别把每句话都问成病历。"
+          ],
+          "deflect": [
+            "这事我能说，但你别逼太紧。",
+            "不是故意躲，是你问得太直。",
+            "我没想骗你。"
+          ]
+        },
+        "boundary": {
+          "boundary_safe": [
+            "想继续可以，但套必须戴。",
+            "可以玩，底线得先说死。",
+            "真想碰，就按最稳的来。"
+          ],
+          "pressure": [
+            "别聊那么细。",
+            "都到这儿了还想一层层上锁？",
+            "先别把气氛掐死。"
+          ],
+          "mixed": [
+            "我不是完全没底线。",
+            "你要我现在把每一步说死也不现实。",
+            "边界我有，只是不想说成合同。"
+          ]
+        }
+      },
+      "events": {
+        "introTitle": "先别急着脱",
+        "testkit": {
+          "positiveTitle": "试纸阳性",
+          "positiveLines": [
+            "试纸亮了。",
+            "至少能看出这些风险：{diseases}。",
+            "这是线索，不是全部。"
+          ],
+          "uncertainTitle": "试纸不干脆",
+          "uncertainLines": [
+            "这一下没给你准话。",
+            "像是窗口期，也像是他嘴不干净。"
+          ],
+          "negativeTitle": "试纸没炸",
+          "negativeLines": [
+            "这次没报常见风险。",
+            "阴性不是免死金牌。"
+          ],
+          "previewPrefix": "顺手又瞥见："
+        },
+        "hospital": {
+          "title": "虚惊一场",
+          "lines": [
+            "这次医院没查出问题。",
+            "压力清零了，时间和压抑也一起被吃走一截。"
+          ]
+        },
+        "refuse": {
+          "title": "继续找",
+          "leaveHighRisk": "你走对了。",
+          "leaveSafe": "你错过了一个不算脏的。"
+        },
+        "sexAction": {
+          "title": "这一下",
+          "release": "压抑 -{reward}，本回合净变化 {delta}。",
+          "anxiety": "压力 +{delta}",
+          "infected": "你还不知道，但这一下已经记到账上了。",
+          "escaped": "他本来就带风险，这次没轮到你倒霉。",
+          "clean": "这次没踩雷。"
+        }
+      },
+      "endingEvents": {
+        "survive": {
+          "title": "幸存",
+          "lines": [
+            "你全身而退。",
+            "这次没被气氛骗上床。"
+          ]
+        },
+        "bad_win": {
+          "title": "糟糕的胜利",
+          "lines": [
+            "当晚是爽到了，后账还是追上来了。",
+            "你赢了那一下，输给了后劲。"
+          ]
+        },
+        "burnout": {
+          "title": "欲火焚身",
+          "lines": [
+            "那团火把你脑子烧穿了。",
+            "后面你看谁都像灭火器。"
+          ]
+        },
+        "breakdown": {
+          "title": "精神崩溃",
+          "lines": [
+            "你先乱了。",
+            "一乱，谁在骗你都分不清了。"
+          ]
+        },
+        "confirmed_infection": {
+          "title": "确诊感染",
+          "lines": [
+            "医院把侥幸按死了。",
+            "该来的还是来了。"
+          ]
+        }
+      },
+      "criticalReasons": {
+        "surviveLeave": "你能活，不是因为不色，是因为该走真走。",
+        "surviveStay": "你能活，不是因为运气，是因为没把能睡当安全。",
+        "bad_win": "你输在把没翻车当没风险。",
+        "burnout": "你输给了那团火。",
+        "breakdown": "你先乱了。",
+        "confirmed_infection": "那点侥幸还是被医院按死了。"
+      }
+    },
+    "modes": {
+      "male": {
+        "scenes": {
+          "dorm": {
+            "label": "男生宿舍",
+            "openerPool": [
+              "门一关，他就贴近了点。",
+              "宿舍里全是洗衣液味。",
+              "他把桌上的杂物扫开，给你腾地方。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "桌上还摊着上一位留下的奶茶杯",
+                "tone": "warning"
+              },
+              {
+                "text": "手机一直亮着，像在同时回别人消息",
+                "tone": "warning"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "桌角整齐摆着没拆封的安全套",
+                "tone": "safe"
+              },
+              {
+                "text": "他一进门就先去洗手",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他说今晚已经跑了两间寝室。",
+                "tone": "risk"
+              },
+              {
+                "text": "他顺嘴提到刚和上一个人分开没多久。",
+                "tone": "warning"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说自己平时很少见网友。",
+                "tone": "safe"
+              },
+              {
+                "text": "他提起明早还有课，不想把局面搞太大。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "hotel": {
+            "label": "快捷酒店",
+            "openerPool": [
+              "房门一刷开，冷气和香薰一起扑出来。",
+              "酒店床很白，他动作却熟得发滑。",
+              "他把房卡往桌上一丢，像这地方来过不止一次。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "床头放着拆了一半的阻断药盒",
+                "tone": "risk"
+              },
+              {
+                "text": "洗手台边有一次性牙刷被拆了两份",
+                "tone": "warning"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他主动把安全套放到你看得见的地方",
+                "tone": "safe"
+              },
+              {
+                "text": "垃圾桶里只有未拆封的洗漱用品包装",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他说这家店前台都认识他了。",
+                "tone": "risk"
+              },
+              {
+                "text": "他说自己最讨厌留名字。",
+                "tone": "warning"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说是临时起意订的房。",
+                "tone": "safe"
+              },
+              {
+                "text": "他嫌房间脏，先换了两遍一次性床单。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "club": {
+            "label": "夜店散场后",
+            "openerPool": [
+              "音乐刚停，他还带着酒气。",
+              "你们站在门口灯牌下，他眼神已经很上头。",
+              "他说话凑得很近，像怕你清醒。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "他身上有一股刺鼻的化学甜味",
+                "tone": "risk"
+              },
+              {
+                "text": "手腕上还挂着陌生人的入场手环",
+                "tone": "warning"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他先问你清不清醒",
+                "tone": "safe"
+              },
+              {
+                "text": "他坚持先去买水和套",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他含糊提到今晚已经和别人贴过几轮了。",
+                "tone": "risk"
+              },
+              {
+                "text": "他对上一个人的名字毫无印象。",
+                "tone": "warning"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说自己本来想直接回家。",
+                "tone": "safe"
+              },
+              {
+                "text": "他抱怨朋友把他一个人丢下。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "street": {
+            "label": "深夜街边",
+            "openerPool": [
+              "夜风很凉，他外套拉得很高。",
+              "便利店门口谁都没完全放松。",
+              "他看了眼表，说再磨蹭天就亮了。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "他坚持去公厕或公园，说快点解决就行",
+                "tone": "risk"
+              },
+              {
+                "text": "他说不开房，嫌留下痕迹麻烦",
+                "tone": "warning"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他先提议换个更干净更安全的地方",
+                "tone": "safe"
+              },
+              {
+                "text": "他明确说不想在街边乱来",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他对今晚去过哪儿闪烁其词。",
+                "tone": "warning"
+              },
+              {
+                "text": "他说自己一向随缘，能约上谁算谁。",
+                "tone": "risk"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说自己只是下班太晚，脑子一热。",
+                "tone": "safe"
+              },
+              {
+                "text": "他反复看表，像还有点想撤。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "home": {
+            "label": "对方家里",
+            "openerPool": [
+              "门口鞋柜很整齐，屋里有一点沐浴露味。",
+              "客厅灯开着，他没故意做气氛。",
+              "你一进门就看见桌上还有没收好的外卖盒。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "茶几上还摆着两只没洗的酒杯",
+                "tone": "warning"
+              },
+              {
+                "text": "垃圾桶里露出刚拆封的阻断药说明书",
+                "tone": "risk"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "洗手台摆着近期体检单和消毒用品",
+                "tone": "safe"
+              },
+              {
+                "text": "他先问你要不要洗澡、漱口",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他说这套房只是偶尔来住。",
+                "tone": "warning"
+              },
+              {
+                "text": "他解释上一个人只是朋友，但说法很绕。",
+                "tone": "risk"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说自己平时更宅，今天属于突然发疯。",
+                "tone": "safe"
+              },
+              {
+                "text": "他提到明早还要早起，不想折腾太久。",
+                "tone": "safe"
+              }
+            ]
+          }
+        },
+        "tutorials": [
+          {
+            "introLines": [
+              {
+                "tone": "warning",
+                "text": "红旗贴脸的时候，走人就是赢。"
+              },
+              {
+                "tone": "muted",
+                "text": "别让下半身替你下注。"
+              }
+            ],
+            "opener": "他一贴上来就急着把你往更深的地方拱。",
+            "visibleClues": [
+              {
+                "text": "身上带着刺鼻的化学甜味",
+                "tone": "risk"
+              },
+              {
+                "text": "一直催你别开灯、别问太多",
+                "tone": "warning"
+              }
+            ],
+            "questionClues": {
+              "smalltalk": {
+                "text": "你一套话，他顺嘴说漏今晚已经换过两场。",
+                "tone": "risk"
+              },
+              "probe": {
+                "text": "你追问检测，他只会顶嘴，连上次时间都说不清。",
+                "tone": "warning",
+                "contradiction": true
+              },
+              "boundary": {
+                "text": "他不在乎你舒不舒服，只想快点推进到最冒险那一步。",
+                "tone": "risk"
+              }
+            }
+          },
+          {
+            "introLines": [
+              {
+                "tone": "warning",
+                "text": "看着干净，不代表说得圆。"
+              },
+              {
+                "tone": "muted",
+                "text": "这局用追问掀他的漂亮话。"
+              }
+            ],
+            "opener": "他笑得很温柔，屋里也收拾得干净。",
+            "visibleClues": [
+              {
+                "text": "洗手台摆着整齐的清洁用品",
+                "tone": "safe"
+              },
+              {
+                "text": "嘴上说无套不聊",
+                "tone": "constraint",
+                "detail": "只接受全程戴套。"
+              }
+            ],
+            "questionClues": {
+              "smalltalk": {
+                "text": "他把自己说得像很少出来，但细节里总像背稿。",
+                "tone": "warning"
+              },
+              "probe": {
+                "text": "他说“上周刚测过”，但你一追医院和日期，他立刻开始打岔。",
+                "tone": "warning",
+                "contradiction": true
+              },
+              "boundary": {
+                "text": "他嘴上说尊重边界，但总在暗暗试探你能不能更快更近。",
+                "tone": "caution"
+              }
+            }
+          },
+          {
+            "introLines": [
+              {
+                "tone": "success",
+                "text": "怪，不等于危险。"
+              },
+              {
+                "tone": "muted",
+                "text": "把边界硬和人很脏拆开看。"
+              }
+            ],
+            "opener": "他看起来比你还紧张，再靠近一点都像会脸红。",
+            "visibleClues": [
+              {
+                "text": "说话小声，生怕室友听见",
+                "tone": "neutral"
+              },
+              {
+                "text": "只肯边缘试探",
+                "tone": "constraint",
+                "detail": "只接受口或边缘玩法。"
+              }
+            ],
+            "questionClues": {
+              "smalltalk": {
+                "text": "他承认自己经验少，今晚更像是被你推着来的。",
+                "tone": "safe"
+              },
+              "probe": {
+                "text": "他能准确说出上次检测的时间和地点。",
+                "tone": "safe"
+              },
+              "boundary": {
+                "text": "他的底线很明确，不是在骗你冒险。",
+                "tone": "safe"
+              }
+            }
+          }
+        ]
+      },
+      "female": {
+        "scenes": {
+          "home": {
+            "label": "他家客厅",
+            "openerPool": [
+              "他把门一关就凑近了。",
+              "客厅收得挺干净，他眼神却一点不干净。",
+              "他把外卖盒往旁边一推，像下一步就准备把你往沙发里按。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "茶几上放着没丢的拆封套盒",
+                "tone": "warning"
+              },
+              {
+                "text": "洗手台上摆着拆过的阻断药说明书",
+                "tone": "risk"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他先问你要不要洗澡、漱口",
+                "tone": "safe"
+              },
+              {
+                "text": "他把套和湿巾直接放到你看得见的地方",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他说“你别多想”，可屋里像刚送走过别人。",
+                "tone": "risk"
+              },
+              {
+                "text": "他对上一个来过这里的人解释得太快。",
+                "tone": "warning"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说自己平时不太带人回家，今晚更像一时上头。",
+                "tone": "safe"
+              },
+              {
+                "text": "他提到第二天一早还要上班，不像打算狠狠干一整夜。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "hotel": {
+            "label": "酒店房间",
+            "openerPool": [
+              "房门一关，他顺手把链条也扣上了。",
+              "酒店床单很白，他的眼神却一点不干净。",
+              "他把房卡往桌上一甩，像这套流程已经跑熟了。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "床头那包套已经拆了一个",
+                "tone": "risk"
+              },
+              {
+                "text": "浴室里丢着两副一次性拖鞋",
+                "tone": "warning"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他先问你底线，再问你想不想继续",
+                "tone": "safe"
+              },
+              {
+                "text": "他嫌酒店脏，先让你看了一眼全新的套和湿巾",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他说这家店前台都快认识他了。",
+                "tone": "risk"
+              },
+              {
+                "text": "他对最近约过几个人说得很滑。",
+                "tone": "warning"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说是临时起意开房，话里有点慌。",
+                "tone": "safe"
+              },
+              {
+                "text": "他承认自己也有点紧张。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "club": {
+            "label": "酒吧散场后",
+            "openerPool": [
+              "他身上还带着酒气，话已经往床上拐了。",
+              "酒吧门口灯牌发亮，他看你的眼神只剩欲望。",
+              "音乐刚停，他贴过来说话，像生怕你清醒。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "他手腕上还挂着别人的手绳",
+                "tone": "risk"
+              },
+              {
+                "text": "他话里一直催你快点",
+                "tone": "warning"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他先问你清不清醒",
+                "tone": "safe"
+              },
+              {
+                "text": "他坚持先去买水和套",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他说今晚“就玩玩”，语气却像已经换过好几轮。",
+                "tone": "risk"
+              },
+              {
+                "text": "他连上一个贴过的人叫什么都记不清。",
+                "tone": "warning"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说原本准备回家，是你让他临时改主意。",
+                "tone": "safe"
+              },
+              {
+                "text": "他抱怨朋友把他一个人丢下，像并不常这么疯。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "street": {
+            "label": "深夜街边",
+            "openerPool": [
+              "夜风很冷，他却只想把你往更偏的地方带。",
+              "便利店灯牌一晃一晃，他说再磨蹭就没那股火了。",
+              "他嘴上说尊重你，脚下却一直把你往死角领。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "他不想开房，只想找个偏地方赶紧来一下",
+                "tone": "risk"
+              },
+              {
+                "text": "他一提留下记录就皱眉",
+                "tone": "warning"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他先提议换个更安全更干净的地方",
+                "tone": "safe"
+              },
+              {
+                "text": "他说街边太脏也太险",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他对今晚去过哪儿闪烁其词。",
+                "tone": "warning"
+              },
+              {
+                "text": "他说自己向来随缘，能拉到谁就算谁。",
+                "tone": "risk"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说刚下班脑子发热才会站在这儿。",
+                "tone": "safe"
+              },
+              {
+                "text": "他看了几次时间，像还想给自己留退路。",
+                "tone": "safe"
+              }
+            ]
+          },
+          "car": {
+            "label": "车里",
+            "openerPool": [
+              "车门一关，空间立刻只剩下体温和呼吸。",
+              "他把空调调低，视线却一直往你腿上滑。",
+              "狭小车厢里，他每句话都像在试你会不会松口。"
+            ],
+            "visibleRisk": [
+              {
+                "text": "中控台上丢着陌生发圈和拆过的湿巾",
+                "tone": "warning"
+              },
+              {
+                "text": "他嫌开房麻烦，像更爱把人哄进这种没退路的空间",
+                "tone": "risk"
+              }
+            ],
+            "visibleSafe": [
+              {
+                "text": "他主动说车里不合适",
+                "tone": "safe"
+              },
+              {
+                "text": "他把套放进你手里，让你自己决定",
+                "tone": "safe"
+              }
+            ],
+            "smalltalkRisk": [
+              {
+                "text": "他说自己常这样兜风顺手约人。",
+                "tone": "risk"
+              },
+              {
+                "text": "他把过去几次约会讲得很轻。",
+                "tone": "warning"
+              }
+            ],
+            "smalltalkSafe": [
+              {
+                "text": "他说今晚更像冲动开错了门。",
+                "tone": "safe"
+              },
+              {
+                "text": "他承认自己嘴上厉害，真到临门一脚反而会踩刹车。",
+                "tone": "safe"
+              }
+            ]
+          }
+        },
+        "tutorials": [
+          {
+            "introLines": [
+              {
+                "tone": "warning",
+                "text": "他越急着把你往床上哄，越要先踩刹车。"
+              },
+              {
+                "tone": "muted",
+                "text": "先认出那种拿欲望压你松口的人。"
+              }
+            ],
+            "opener": "他一靠近就把话往“别想了，跟我走”上带。",
+            "visibleClues": [
+              {
+                "text": "一直催你别磨蹭，像怕你清醒后反悔",
+                "tone": "risk"
+              },
+              {
+                "text": "你一提安全感，他就笑着把话题往气氛上带",
+                "tone": "warning"
+              }
+            ],
+            "questionClues": {
+              "smalltalk": {
+                "text": "你一套话，他顺嘴漏出今晚刚和别人散场。",
+                "tone": "risk"
+              },
+              "probe": {
+                "text": "你追问检测记录，他只会笑着哄你别扫兴，日期一句都说不清。",
+                "tone": "warning",
+                "contradiction": true
+              },
+              "boundary": {
+                "text": "你一压边界，他立刻开始试探你能不能把套和底线一起往后挪。",
+                "tone": "risk"
+              }
+            }
+          },
+          {
+            "introLines": [
+              {
+                "tone": "warning",
+                "text": "会给你安全感，不代表真安全。"
+              },
+              {
+                "tone": "muted",
+                "text": "这局从温柔和体面里抓漏洞。"
+              }
+            ],
+            "opener": "他屋里很干净，说话也温柔，第一眼像很安全。",
+            "visibleClues": [
+              {
+                "text": "套和湿巾摆得很显眼",
+                "tone": "safe"
+              },
+              {
+                "text": "嘴上说无套不聊",
+                "tone": "constraint",
+                "detail": "只接受全程戴套。"
+              }
+            ],
+            "questionClues": {
+              "smalltalk": {
+                "text": "他把自己包装得很克制，可细节里总像背熟了台词。",
+                "tone": "warning"
+              },
+              "probe": {
+                "text": "他说“前阵子刚测过”，但你一问日期和医院，他立刻开始绕。",
+                "tone": "warning",
+                "contradiction": true
+              },
+              "boundary": {
+                "text": "他嘴上说尊重你，实际一直在试探你能不能更快脱防备。",
+                "tone": "caution"
+              }
+            }
+          },
+          {
+            "introLines": [
+              {
+                "tone": "success",
+                "text": "边界很硬，不代表他想坑你。"
+              },
+              {
+                "tone": "muted",
+                "text": "把谨慎和有鬼拆开看。"
+              }
+            ],
+            "opener": "他嘴上也有火，但一直踩着刹车。",
+            "visibleClues": [
+              {
+                "text": "他主动把套塞到你手里，让你自己决定",
+                "tone": "safe"
+              },
+              {
+                "text": "一提到底线，他先把安全放在前面",
+                "tone": "constraint",
+                "detail": "只接受全程戴套。"
+              }
+            ],
+            "questionClues": {
+              "smalltalk": {
+                "text": "他承认自己也会上头，但更怕把事情搞脏。",
+                "tone": "safe"
+              },
+              "probe": {
+                "text": "他能清楚说出上次检测时间和结果。",
+                "tone": "safe"
+              },
+              "boundary": {
+                "text": "他的底线很明确，重点是怕你吃亏。",
+                "tone": "safe"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "ai": {
+    "chat": {
+      "system": "你负责把成人小游戏里的对象回复改成一句更像真人说的话。保持事实不变，不新增检测、病情、边界、事件或人物信息。只写一句中文短句，最好 8 到 20 个字。不要旁白，不要解释，不要总结，不要写成段落。禁用“不是……而是……”“你要做的事”“关键是”这种句式。风格可以挑逗、辛辣、黑色、露骨，但必须克制。只返回 JSON。"
+    },
+    "ending": {
+      "system": "你负责把成人小游戏整轮结束后的复盘改成一句短刺刀。保持事实和结局不变，不新增信息，不说教，不总结，不排比。只写一句中文短句，最好 10 到 22 个字。禁用“不是……而是……”“你输在”“关键是”这种句式。只返回 JSON。"
+    }
+  }
+}

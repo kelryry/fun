@@ -7,19 +7,20 @@
     }
 
     const state = {
+        copy: null,
         runtime: null,
         sessionToken: null,
         uiState: null,
         busy: false,
         workerReady: false,
         currentMode: "male",
-        nextButtonMode: "close",
         casebook: loadCasebook(),
         tutorialStage: loadTutorialStage()
     };
 
     const dom = {
         body: document.body,
+        titleNode: document.querySelector("title"),
         gameContainer: document.getElementById("game-container"),
         gameContent: document.getElementById("game-content"),
         introModal: document.getElementById("intro-modal"),
@@ -30,19 +31,27 @@
         frustrationValue: document.getElementById("frustration-val"),
         anxietyBar: document.getElementById("anxiety-bar"),
         anxietyValue: document.getElementById("anxiety-val"),
+        frustrationLabel: document.getElementById("frustration-label"),
+        anxietyLabel: document.getElementById("anxiety-label"),
         panicWarning: document.getElementById("panic-warning"),
+        turnLabel: document.getElementById("turn-label"),
         turnCount: document.getElementById("turn-count"),
+        testkitLabel: document.getElementById("testkit-label"),
         testkitCount: document.getElementById("item-testkit"),
+        hospitalLabel: document.getElementById("hospital-label"),
+        hospitalNote: document.getElementById("hospital-note"),
         modeChip: document.getElementById("mode-chip"),
         avatarEmoji: document.getElementById("avatar-emoji"),
         partnerStatus: document.getElementById("partner-status"),
         sceneLabel: document.getElementById("scene-label"),
         flirtText: document.getElementById("flirt-text"),
+        clueTitle: document.getElementById("clue-title"),
         tagsContainer: document.getElementById("tags-container"),
         chatButton: document.getElementById("btn-chat"),
         chatButtonLabel: document.getElementById("chat-button-label"),
         chatButtonNote: document.getElementById("chat-button-note"),
         chatPanel: document.getElementById("chat-panel"),
+        chatPanelHint: document.getElementById("chat-panel-hint"),
         chatOptionButtons: Array.from(document.querySelectorAll("[data-question-type]")),
         feedbackIcon: document.getElementById("feedback-icon"),
         feedbackTitle: document.getElementById("feedback-title"),
@@ -52,30 +61,57 @@
         criticalReason: document.getElementById("critical-reason"),
         unlockCard: document.getElementById("unlock-card"),
         historyContainer: document.getElementById("history-container"),
+        historyTitle: document.getElementById("history-title"),
+        historyToggleMeta: document.getElementById("history-toggle-meta"),
         historyList: document.getElementById("history-list"),
         nextButton: document.getElementById("next-btn"),
         restartButton: document.getElementById("restart-btn"),
-        buildChip: document.getElementById("build-chip"),
+        runtimeChip: document.getElementById("runtime-chip"),
         runtimeNote: document.getElementById("runtime-note"),
+        introTitle: document.getElementById("intro-title"),
+        introKicker: document.getElementById("intro-kicker"),
+        introLines: document.getElementById("intro-lines"),
         startButtons: Array.from(document.querySelectorAll("[data-mode]")),
-        helpOpenButton: document.getElementById("open-help-btn"),
+        helpOpenButtons: Array.from(document.querySelectorAll("[data-open-help]")),
         helpCloseButtons: document.querySelectorAll("[data-close-help]"),
-        casebookOpenButtons: [
-            document.getElementById("open-casebook-help-btn"),
-            document.getElementById("open-casebook-feedback-btn")
-        ].filter(Boolean),
+        helpTitle: document.getElementById("help-title"),
+        helpSections: document.getElementById("help-sections"),
+        casebookOpenButtons: Array.from(document.querySelectorAll("[data-open-casebook]")),
         casebookCloseButtons: document.querySelectorAll("[data-close-casebook]"),
-        casebookFeedbackButton: document.getElementById("open-casebook-feedback-btn"),
+        casebookTitle: document.getElementById("casebook-title"),
+        casebookSummary: document.getElementById("casebook-summary"),
+        casebookSectionBlocks: Array.from(document.querySelectorAll("[data-casebook-section]")),
+        casebookLists: Object.fromEntries(
+            data.CASEBOOK_SECTION_IDS.map((sectionId) => [
+                sectionId,
+                document.getElementById(`casebook-${sectionId}`)
+            ])
+        ),
         hospitalButton: document.getElementById("go-hospital-btn"),
         testkitButton: document.getElementById("use-testkit-btn"),
         actionButtons: Array.from(document.querySelectorAll("[data-action]")),
-        casebookSummary: document.getElementById("casebook-summary"),
-        casebookLists: Object.fromEntries(
-            data.CASEBOOK_SECTIONS.map((section) => [
-                section.id,
-                document.getElementById(`casebook-${section.id}`)
-            ])
-        )
+        actionTextNodes: {
+            oral_condom: {
+                title: document.getElementById("action-oral-condom-title"),
+                note: document.getElementById("action-oral-condom-note")
+            },
+            sex_condom: {
+                title: document.getElementById("action-sex-condom-title"),
+                note: document.getElementById("action-sex-condom-note")
+            },
+            oral_raw: {
+                title: document.getElementById("action-oral-raw-title"),
+                note: document.getElementById("action-oral-raw-note")
+            },
+            sex_raw: {
+                title: document.getElementById("action-sex-raw-title"),
+                note: document.getElementById("action-sex-raw-note")
+            },
+            refuse: {
+                title: document.getElementById("action-refuse-title"),
+                note: document.getElementById("action-refuse-note")
+            }
+        }
     };
 
     function setHidden(element, hidden) {
@@ -94,6 +130,14 @@
         if (element) {
             element.style.width = value;
         }
+    }
+
+    function formatText(template, vars = {}) {
+        return String(template || "").replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? ""));
+    }
+
+    function getCopy() {
+        return state.copy;
     }
 
     function createEmptyCasebook() {
@@ -142,18 +186,134 @@
         window.localStorage.setItem(data.STORAGE_KEYS.tutorialStage, String(value));
     }
 
-    function getModeMeta(mode) {
-        return data.MODES[mode] || data.MODES.male;
+    async function loadCopy() {
+        const response = await fetch(data.COPY_URL, {
+            headers: { Accept: "application/json" },
+            cache: "no-store"
+        });
+
+        if (!response.ok) {
+            throw new Error(`Copy request failed: ${response.status}`);
+        }
+
+        state.copy = await response.json();
+    }
+
+    function getModeLabel(mode) {
+        const copy = getCopy();
+        return copy.shell.battle.modeLabel[mode] || copy.shell.battle.modeLabel.male;
+    }
+
+    function renderHelp() {
+        const copy = getCopy();
+        dom.helpSections.innerHTML = "";
+
+        copy.shell.help.sections.forEach((section) => {
+            const block = document.createElement("section");
+            block.className = "help-section";
+
+            const title = document.createElement("h3");
+            title.className = "help-section__title";
+            title.textContent = section.title;
+            block.appendChild(title);
+
+            section.lines.forEach((line) => {
+                const paragraph = document.createElement("p");
+                paragraph.className = "help-section__line";
+                paragraph.textContent = line;
+                block.appendChild(paragraph);
+            });
+
+            dom.helpSections.appendChild(block);
+        });
+    }
+
+    function renderStaticCopy() {
+        const copy = getCopy();
+
+        setText(dom.titleNode, copy.shell.pageTitle);
+        document.title = copy.shell.pageTitle;
+        setText(dom.introTitle, copy.shell.intro.title);
+        setText(dom.introKicker, copy.shell.intro.kicker);
+        setText(dom.helpTitle, copy.shell.help.title);
+        setText(dom.casebookTitle, copy.shell.casebook.title);
+        setText(dom.turnLabel, copy.shell.battle.turn);
+        setText(dom.frustrationLabel, copy.shell.battle.frustration);
+        setText(dom.anxietyLabel, copy.shell.battle.anxiety);
+        setText(dom.panicWarning, copy.shell.battle.panic);
+        setText(dom.clueTitle, copy.shell.battle.cluesTitle);
+        setText(dom.testkitLabel, copy.shell.battle.testkit);
+        setText(dom.hospitalLabel, copy.shell.battle.hospital);
+        setText(dom.hospitalNote, copy.shell.battle.hospitalNote);
+        setText(dom.chatPanelHint, copy.shell.battle.chatPanelHint);
+        setText(dom.historyTitle, copy.shell.feedback.historyTitle);
+        setText(dom.historyToggleMeta, copy.shell.feedback.historyToggle);
+        setText(dom.nextButton, copy.shell.feedback.next);
+        setText(dom.restartButton, copy.shell.feedback.restart);
+
+        dom.introLines.innerHTML = "";
+        copy.shell.intro.lines.forEach((line) => {
+            const paragraph = document.createElement("p");
+            paragraph.className = "intro-line";
+            paragraph.textContent = line;
+            dom.introLines.appendChild(paragraph);
+        });
+
+        dom.startButtons.forEach((button) => {
+            const mode = button.dataset.mode || "male";
+            button.textContent = copy.shell.intro.modeButtons[mode] || mode;
+        });
+
+        dom.helpOpenButtons.forEach((button) => {
+            if (button.id === "open-help-btn") {
+                button.textContent = copy.shell.intro.helpButton;
+            }
+        });
+
+        setText(dom.casebookOpenButtons.find((button) => button.id === "open-casebook-help-btn"), copy.shell.help.openCasebook);
+        setText(dom.casebookOpenButtons.find((button) => button.id === "open-casebook-feedback-btn"), copy.shell.feedback.openCasebook);
+        setText(dom.helpCloseButtons[0], copy.shell.help.close);
+        setText(dom.helpCloseButtons[1], copy.shell.help.close);
+        setText(dom.casebookCloseButtons[0], copy.shell.casebook.close);
+        setText(dom.casebookCloseButtons[1], copy.shell.casebook.close);
+
+        Object.entries(copy.ui.actions).forEach(([actionId, actionCopy]) => {
+            const nodes = dom.actionTextNodes[actionId];
+            if (!nodes) {
+                return;
+            }
+
+            setText(nodes.title, actionCopy.title);
+            setText(nodes.note, actionCopy.note);
+        });
+
+        dom.chatOptionButtons.forEach((button) => {
+            const questionType = button.dataset.questionType;
+            const optionCopy = copy.ui.chat[questionType];
+            button.innerHTML = `<strong>${escapeHtml(optionCopy.label)}</strong><span>${escapeHtml(optionCopy.prompt)}</span>`;
+        });
+
+        dom.casebookSectionBlocks.forEach((section) => {
+            const id = section.dataset.casebookSection;
+            const title = section.querySelector(".casebook-section__title");
+            setText(title, copy.shell.casebook.sections[id]);
+        });
+
+        renderHelp();
+        renderCasebook();
+        syncRuntimeStatus("checking", false);
+        updateModeChip(state.currentMode);
     }
 
     function updateModeChip(mode) {
         state.currentMode = mode;
-        setText(dom.modeChip, getModeMeta(mode).label);
+        setText(dom.modeChip, getModeLabel(mode));
     }
 
-    function updateBuildStatus(mode, detail, ready = false) {
-        setText(dom.buildChip, mode);
-        setText(dom.runtimeNote, detail);
+    function syncRuntimeStatus(stateKey, ready) {
+        const runtimeCopy = getCopy().shell.intro.runtime[stateKey];
+        setText(dom.runtimeChip, runtimeCopy.chip);
+        setText(dom.runtimeNote, runtimeCopy.note);
         dom.startButtons.forEach((button) => {
             button.disabled = !ready;
         });
@@ -165,7 +325,7 @@
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(), 1800);
 
-        updateBuildStatus("服务器检查中", "正在确认服务器有没有接住这一局……", false);
+        syncRuntimeStatus("checking", false);
 
         try {
             const response = await fetch(`${apiBase}/bootstrap`, {
@@ -177,23 +337,12 @@
                 throw new Error(`Bootstrap request failed: ${response.status}`);
             }
 
-            const payload = await response.json();
-            state.runtime = payload;
-            updateBuildStatus(
-                "服务器在线",
-                payload.app.aiEnabled
-                    ? "双视角已上线，聊天和终局复盘会更像真人说话。"
-                    : "双视角已上线，聊天和终局复盘先走稳定模板。",
-                true
-            );
+            state.runtime = await response.json();
+            syncRuntimeStatus(state.runtime.features?.aiPolish ? "onlineAi" : "online", true);
         } catch (error) {
             console.warn("Bootstrap failed.", error);
             state.runtime = null;
-            updateBuildStatus(
-                "服务器离线",
-                "服务器没接上，这一版暂时不能开局。",
-                false
-            );
+            syncRuntimeStatus("offline", false);
         } finally {
             window.clearTimeout(timeoutId);
         }
@@ -223,20 +372,17 @@
 
     function setBusy(isBusy) {
         state.busy = isBusy;
-        const disabled = isBusy || !state.uiState || state.uiState.gameOver;
-
-        dom.chatButton.disabled = isBusy || !state.uiState?.partner?.chat?.available;
+        const gameOver = Boolean(state.uiState?.gameOver);
+        dom.chatButton.disabled = isBusy || !state.uiState?.partner?.chat?.available || gameOver;
+        dom.testkitButton.disabled = isBusy || !state.uiState || gameOver;
+        dom.hospitalButton.disabled = isBusy || !state.uiState || gameOver;
         dom.chatOptionButtons.forEach((button) => {
             button.disabled = isBusy || button.disabled;
         });
-        dom.testkitButton.disabled = disabled;
-        dom.hospitalButton.disabled = disabled;
         dom.actionButtons.forEach((button) => {
-            if (!isBusy) {
-                return;
+            if (isBusy) {
+                button.disabled = true;
             }
-
-            button.disabled = true;
         });
     }
 
@@ -244,10 +390,20 @@
         dom.startButtons.forEach((button) => {
             button.addEventListener("click", () => startGame(button.dataset.mode || "male"));
         });
-        dom.helpOpenButton.addEventListener("click", () => toggleHelp(true));
+
+        dom.helpOpenButtons.forEach((button) => {
+            button.addEventListener("click", () => toggleHelp(true));
+        });
+
         dom.helpModal.addEventListener("click", (event) => {
             if (event.target === dom.helpModal) {
                 toggleHelp(false);
+            }
+        });
+
+        dom.casebookModal.addEventListener("click", (event) => {
+            if (event.target === dom.casebookModal) {
+                toggleCasebook(false);
             }
         });
 
@@ -255,18 +411,12 @@
             button.addEventListener("click", () => toggleHelp(false));
         });
 
-        dom.casebookOpenButtons.forEach((button) => {
-            button.addEventListener("click", () => toggleCasebook(true));
-        });
-
         dom.casebookCloseButtons.forEach((button) => {
             button.addEventListener("click", () => toggleCasebook(false));
         });
 
-        dom.casebookModal.addEventListener("click", (event) => {
-            if (event.target === dom.casebookModal) {
-                toggleCasebook(false);
-            }
+        dom.casebookOpenButtons.forEach((button) => {
+            button.addEventListener("click", () => toggleCasebook(true));
         });
 
         dom.chatButton.addEventListener("click", () => {
@@ -290,7 +440,6 @@
 
         dom.nextButton.addEventListener("click", () => {
             setHidden(dom.feedbackOverlay, true);
-            state.nextButtonMode = "close";
         });
 
         dom.restartButton.addEventListener("click", returnToIntro);
@@ -324,41 +473,35 @@
         setHidden(dom.historyContainer, true);
         setHidden(dom.nextButton, false);
         setHidden(dom.restartButton, true);
-        setHidden(dom.casebookFeedbackButton, true);
-        dom.nextButton.textContent = "继续";
-        state.nextButtonMode = "close";
+        setHidden(dom.casebookOpenButtons.find((button) => button.id === "open-casebook-feedback-btn"), true);
+        setText(dom.nextButton, getCopy().shell.feedback.next);
         if (dom.historyContainer) {
             dom.historyContainer.open = true;
         }
     }
 
     function renderCasebook() {
+        const copy = getCopy();
         const totals = Object.fromEntries(
             Object.keys(state.casebook).map((key) => [key, Object.keys(state.casebook[key] || {}).length])
         );
 
         dom.casebookSummary.innerHTML = "";
-        [
-            `已见人格 ${totals.personas}`,
-            `已见话术 ${totals.lieTypes}`,
-            `已达成结局 ${totals.endings}`,
-            `已确认病原 ${totals.diseases}`,
-            `已得称号 ${totals.titles}`
-        ].forEach((text) => {
+        data.CASEBOOK_SECTION_IDS.forEach((sectionId) => {
             const line = document.createElement("p");
-            line.textContent = text;
+            line.textContent = `${copy.shell.casebook.summary[sectionId]} ${totals[sectionId]}`;
             dom.casebookSummary.appendChild(line);
         });
 
-        data.CASEBOOK_SECTIONS.forEach((section) => {
-            const container = dom.casebookLists[section.id];
+        data.CASEBOOK_SECTION_IDS.forEach((sectionId) => {
+            const container = dom.casebookLists[sectionId];
             container.innerHTML = "";
-            const entries = Object.values(state.casebook[section.id] || {});
+            const entries = Object.values(state.casebook[sectionId] || {});
 
             if (entries.length === 0) {
                 const empty = document.createElement("span");
                 empty.className = "casebook-empty";
-                empty.textContent = "还没记下东西";
+                empty.textContent = copy.shell.casebook.empty;
                 container.appendChild(empty);
                 return;
             }
@@ -417,19 +560,20 @@
             return;
         }
 
+        const feedbackCopy = getCopy().shell.feedback;
         const panel = document.createElement("div");
         panel.className = "summary-stats";
         panel.innerHTML = `
-            <h4 class="summary-stats__title">生涯统计</h4>
+            <h4 class="summary-stats__title">${escapeHtml(feedbackCopy.summaryTitle)}</h4>
             <div class="summary-stats__grid">
-                <div class="summary-stats__row"><span>✅ 理智享受</span><strong>${summary.enjoyCount}</strong></div>
-                <div class="summary-stats__row"><span>🛡️ 正确离开</span><strong>${summary.leaveCount}</strong></div>
-                <div class="summary-stats__row"><span>😰 死里逃生</span><strong>${summary.escapeCount}</strong></div>
-                <div class="summary-stats__row"><span>👋 遗憾错过</span><strong>${summary.missCount}</strong></div>
-                <div class="summary-stats__row summary-stats__row--danger"><span>💀 被感染次数</span><strong>${summary.infectedCount}</strong></div>
+                <div class="summary-stats__row"><span>${escapeHtml(feedbackCopy.summaryRows.enjoy)}</span><strong>${summary.enjoyCount}</strong></div>
+                <div class="summary-stats__row"><span>${escapeHtml(feedbackCopy.summaryRows.leave)}</span><strong>${summary.leaveCount}</strong></div>
+                <div class="summary-stats__row"><span>${escapeHtml(feedbackCopy.summaryRows.escape)}</span><strong>${summary.escapeCount}</strong></div>
+                <div class="summary-stats__row"><span>${escapeHtml(feedbackCopy.summaryRows.miss)}</span><strong>${summary.missCount}</strong></div>
+                <div class="summary-stats__row summary-stats__row--danger"><span>${escapeHtml(feedbackCopy.summaryRows.infected)}</span><strong>${summary.infectedCount}</strong></div>
             </div>
             <div class="summary-stats__footer">
-                <span>⏱️ 存活回合</span>
+                <span>${escapeHtml(feedbackCopy.summaryTurns)}</span>
                 <strong>${summary.turnsSurvived}</strong>
             </div>
         `;
@@ -437,6 +581,7 @@
     }
 
     function renderUnlocks(unlockLabels) {
+        const copy = getCopy();
         dom.unlockCard.innerHTML = "";
         if (unlockLabels.length === 0) {
             setHidden(dom.unlockCard, true);
@@ -445,7 +590,7 @@
 
         const title = document.createElement("strong");
         title.className = "unlock-card__title";
-        title.textContent = "案件簿新增记录";
+        title.textContent = copy.shell.casebook.unlock;
         dom.unlockCard.appendChild(title);
 
         unlockLabels.forEach((label) => {
@@ -459,6 +604,7 @@
     }
 
     function renderHistoryList(history) {
+        const feedbackCopy = getCopy().shell.feedback;
         dom.historyList.innerHTML = "";
 
         history.forEach((item) => {
@@ -467,22 +613,22 @@
                 .map((clue) => `<span class="history-tag">${escapeHtml(clue)}</span>`)
                 .join("");
             const diseaseMarkup = item.diseases.length > 0
-                ? `<span class="history-disease">携带: ${item.diseases.map((name) => escapeHtml(name)).join("，")}</span>`
-                : "<span class=\"history-safe\">健康</span>";
+                ? `<span class="history-disease">${escapeHtml(feedbackCopy.carrier)}: ${item.diseases.map((name) => escapeHtml(name)).join("，")}</span>`
+                : `<span class="history-safe">${escapeHtml(feedbackCopy.healthy)}</span>`;
 
             entry.className = "history-entry";
             entry.innerHTML = `
                 <div class="history-avatar">
-                    <span>${item.avatar}</span>
+                    <span>${escapeHtml(item.avatar)}</span>
                     ${item.diseases.length > 0 ? "<span class=\"history-status\">🦠</span>" : ""}
                 </div>
                 <div class="history-copy">
                     <div class="history-scene">${escapeHtml(item.sceneLabel)}</div>
                     <div class="history-tags">${cluesMarkup}</div>
                     <div class="history-subline">${diseaseMarkup}</div>
-                    <div class="history-subline history-subline--reason">${escapeHtml(item.reason || "")}</div>
+                    ${item.reason ? `<div class="history-subline history-subline--reason">${escapeHtml(item.reason)}</div>` : ""}
                 </div>
-                <div class="history-outcome history-outcome--${item.outcomeTone}">
+                <div class="history-outcome history-outcome--${escapeHtml(item.outcomeTone)}">
                     ${escapeHtml(item.outcomeLabel)}
                 </div>
             `;
@@ -511,12 +657,13 @@
         renderSummary(dom.feedbackMessage, uiState.summary);
 
         if (event.disease) {
-            dom.diseaseContent.innerHTML = `<p><b>确诊：</b>${escapeHtml(event.disease.name)}</p><p><b>途径：</b>${escapeHtml(event.disease.transmission)}</p>`;
+            const feedbackCopy = getCopy().shell.feedback;
+            dom.diseaseContent.innerHTML = `<p><b>${escapeHtml(feedbackCopy.diseaseName)}：</b>${escapeHtml(event.disease.name)}</p><p><b>${escapeHtml(feedbackCopy.diseaseRoute)}：</b>${escapeHtml(event.disease.transmission)}</p>`;
             setHidden(dom.diseaseReport, false);
         }
 
         if (event.criticalReason) {
-            dom.criticalReason.textContent = event.criticalReason;
+            setText(dom.criticalReason, event.criticalReason);
             setHidden(dom.criticalReason, false);
         }
 
@@ -532,22 +679,22 @@
         if (event.closeMode === "restart") {
             setHidden(dom.nextButton, true);
             setHidden(dom.restartButton, false);
-            setHidden(dom.casebookFeedbackButton, false);
+            setHidden(dom.casebookOpenButtons.find((button) => button.id === "open-casebook-feedback-btn"), false);
         } else {
-            setText(dom.nextButton, event.closeLabel || "继续");
-            state.nextButtonMode = event.closeMode || "close";
+            setText(dom.nextButton, event.closeLabel || getCopy().shell.feedback.next);
         }
 
         setHidden(dom.feedbackOverlay, false);
     }
 
     function renderClues(clues) {
+        const battleCopy = getCopy().shell.battle;
         dom.tagsContainer.innerHTML = "";
         clues.forEach((clue) => {
             const chip = document.createElement("div");
             if (!clue.revealed) {
                 chip.className = "tag tag--hidden";
-                chip.innerHTML = "<span>❓</span><span>隐藏信息</span>";
+                chip.innerHTML = `<span>❓</span><span>${escapeHtml(battleCopy.hiddenClue)}</span>`;
                 chip.title = clue.detail || "";
             } else {
                 chip.className = `tag tag--${clue.tone || "neutral"}`;
@@ -588,8 +735,14 @@
     }
 
     function syncChatOptions(chatState) {
-        setText(dom.chatButtonLabel, chatState.label || "试探 / 聊天");
-        setText(dom.chatButtonNote, chatState.available ? `还剩 ${chatState.remaining} 次` : "聊不动了");
+        const battleCopy = getCopy().shell.battle;
+        setText(dom.chatButtonLabel, battleCopy.chat);
+        setText(
+            dom.chatButtonNote,
+            chatState.available
+                ? formatText(battleCopy.chatRemaining, { count: chatState.remaining })
+                : battleCopy.chatExhausted
+        );
         dom.chatButton.disabled = state.busy || !chatState.available;
 
         dom.chatOptionButtons.forEach((button) => {
@@ -599,7 +752,7 @@
             }
 
             button.disabled = state.busy || option.disabled;
-            button.innerHTML = `<strong>${option.label}</strong><span>${option.reason || option.prompt}</span>`;
+            button.innerHTML = `<strong>${escapeHtml(option.label)}</strong><span>${escapeHtml(option.reason || option.prompt)}</span>`;
         });
 
         if (!chatState.available) {
@@ -608,6 +761,7 @@
     }
 
     function syncActionLocks(actionLocks) {
+        const lockedText = getCopy().shell.battle.locked;
         dom.actionButtons.forEach((button) => {
             const actionType = button.dataset.action;
             const actionState = actionLocks[actionType];
@@ -618,17 +772,18 @@
                 if (lock) {
                     lock.remove();
                 }
+                button.title = "";
                 return;
             }
 
             button.disabled = true;
             button.classList.add("is-disabled");
             if (lock) {
-                lock.textContent = "对方拒绝";
+                lock.textContent = lockedText;
             } else {
                 const overlay = document.createElement("span");
                 overlay.className = "action-lock";
-                overlay.textContent = "对方拒绝";
+                overlay.textContent = lockedText;
                 button.appendChild(overlay);
             }
             button.title = actionState.reason || "";
@@ -636,6 +791,7 @@
     }
 
     function renderUiState(uiState) {
+        const battleCopy = getCopy().shell.battle;
         state.uiState = uiState;
         updateModeChip(uiState.mode || "male");
         setWidth(dom.frustrationBar, `${uiState.stats.frustration}%`);
@@ -654,8 +810,8 @@
         }
 
         setText(dom.avatarEmoji, partner.avatar);
-        setText(dom.sceneLabel, `场景：${partner.sceneLabel}`);
-        setText(dom.flirtText, `“${partner.opener}”`);
+        setText(dom.sceneLabel, `${battleCopy.scenePrefix} · ${partner.sceneLabel}`);
+        setText(dom.flirtText, partner.opener);
         setHidden(dom.partnerStatus, !partner.flagged);
         renderClues(partner.clues);
         syncChatOptions(partner.chat);
@@ -768,36 +924,43 @@
         setHidden(dom.gameContainer, true);
         setHidden(dom.chatPanel, true);
         setHidden(dom.introModal, false);
-        updateModeChip(state.currentMode);
         renderCasebook();
+        updateModeChip(state.currentMode);
     }
 
     function showFatalEdgeError(error) {
         console.error(error);
-        updateBuildStatus("服务器异常", "服务器刚才断了一下，这局没法继续。", false);
+        syncRuntimeStatus("error", false);
         resetFeedbackState();
+        const runtimeCopy = getCopy().shell.intro.runtime;
         showEvent(
             {
-                title: "服务器中断",
+                title: runtimeCopy.fatalTitle,
                 icon: "⚠️",
                 tone: "danger",
-                lines: [
-                    { tone: "danger", text: "这次请求没被服务器接住，当前进度断掉了。" },
-                    { tone: "muted", text: "返回首页后可以再开一局。" }
-                ],
+                lines: runtimeCopy.fatalLines.map((line, index) => ({
+                    tone: index === 0 ? "danger" : "muted",
+                    text: line
+                })),
                 closeMode: "restart",
-                closeLabel: "返回首页"
+                closeLabel: getCopy().shell.feedback.restart
             },
             {
                 history: state.uiState?.history || [],
-                summary: state.uiState?.summary || null
+                summary: state.uiState?.summary || null,
+                gameOver: true
             },
             []
         );
     }
 
-    bindEvents();
-    renderCasebook();
-    updateModeChip(state.currentMode);
-    await loadRuntimeConfig();
+    try {
+        await loadCopy();
+        renderStaticCopy();
+        bindEvents();
+        await loadRuntimeConfig();
+    } catch (error) {
+        console.error(error);
+        document.body.textContent = "Failed to load game copy.";
+    }
 })();
