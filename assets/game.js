@@ -6,20 +6,15 @@
         return;
     }
 
-    const { CONFIG, AVATARS, DISEASES, FLIRT_LINES, ALL_TAGS } = data;
     const state = {
-        frustration: CONFIG.startFrustration,
-        anxiety: 0,
-        turn: 1,
-        items: { testkit: 1 },
-        currentPartner: null,
-        isInfected: false,
-        infectionData: null,
-        isGameOver: false,
-        history: [],
-        nextButtonMode: "continue",
         runtime: null,
-        partnerFlagged: false
+        sessionToken: null,
+        uiState: null,
+        busy: false,
+        workerReady: false,
+        nextButtonMode: "close",
+        casebook: loadCasebook(),
+        tutorialStage: loadTutorialStage()
     };
 
     const dom = {
@@ -28,6 +23,7 @@
         gameContent: document.getElementById("game-content"),
         introModal: document.getElementById("intro-modal"),
         helpModal: document.getElementById("help-modal"),
+        casebookModal: document.getElementById("casebook-modal"),
         feedbackOverlay: document.getElementById("feedback-overlay"),
         frustrationBar: document.getElementById("frustration-bar"),
         frustrationValue: document.getElementById("frustration-val"),
@@ -38,14 +34,21 @@
         testkitCount: document.getElementById("item-testkit"),
         avatarEmoji: document.getElementById("avatar-emoji"),
         partnerStatus: document.getElementById("partner-status"),
+        sceneLabel: document.getElementById("scene-label"),
         flirtText: document.getElementById("flirt-text"),
         tagsContainer: document.getElementById("tags-container"),
         chatButton: document.getElementById("btn-chat"),
+        chatButtonLabel: document.getElementById("chat-button-label"),
+        chatButtonNote: document.getElementById("chat-button-note"),
+        chatPanel: document.getElementById("chat-panel"),
+        chatOptionButtons: Array.from(document.querySelectorAll("[data-question-type]")),
         feedbackIcon: document.getElementById("feedback-icon"),
         feedbackTitle: document.getElementById("feedback-title"),
         feedbackMessage: document.getElementById("feedback-message"),
         diseaseReport: document.getElementById("disease-report"),
         diseaseContent: document.getElementById("disease-content"),
+        criticalReason: document.getElementById("critical-reason"),
+        unlockCard: document.getElementById("unlock-card"),
         historyContainer: document.getElementById("history-container"),
         historyList: document.getElementById("history-list"),
         nextButton: document.getElementById("next-btn"),
@@ -55,53 +58,101 @@
         startButton: document.getElementById("start-game-btn"),
         helpOpenButton: document.getElementById("open-help-btn"),
         helpCloseButtons: document.querySelectorAll("[data-close-help]"),
+        casebookOpenButtons: [
+            document.getElementById("open-casebook-btn"),
+            document.getElementById("open-casebook-feedback-btn")
+        ].filter(Boolean),
+        casebookCloseButtons: document.querySelectorAll("[data-close-casebook]"),
         hospitalButton: document.getElementById("go-hospital-btn"),
         testkitButton: document.getElementById("use-testkit-btn"),
-        actionButtons: Array.from(document.querySelectorAll("[data-action]"))
+        actionButtons: Array.from(document.querySelectorAll("[data-action]")),
+        casebookSummary: document.getElementById("casebook-summary"),
+        casebookLists: Object.fromEntries(
+            data.CASEBOOK_SECTIONS.map((section) => [
+                section.id,
+                document.getElementById(`casebook-${section.id}`)
+            ])
+        )
     };
 
-    const ACTION_BUTTON_IDS = [
-        "btn-oral-condom",
-        "btn-oral-raw",
-        "btn-sex-condom",
-        "btn-sex-raw"
-    ];
-
     function setHidden(element, hidden) {
-        if (!element) {
-            return;
+        if (element) {
+            element.hidden = hidden;
         }
-
-        element.hidden = hidden;
     }
 
     function setText(element, value) {
-        if (!element) {
-            return;
+        if (element) {
+            element.textContent = value;
         }
-
-        element.textContent = value;
     }
 
     function setWidth(element, value) {
-        if (!element) {
-            return;
+        if (element) {
+            element.style.width = value;
         }
-
-        element.style.width = value;
     }
 
-    function updateBuildStatus(mode, detail) {
+    function createEmptyCasebook() {
+        return {
+            personas: {},
+            lieTypes: {},
+            endings: {},
+            diseases: {},
+            titles: {}
+        };
+    }
+
+    function loadCasebook() {
+        try {
+            const raw = window.localStorage.getItem(data.STORAGE_KEYS.casebook);
+            if (!raw) {
+                return createEmptyCasebook();
+            }
+
+            const parsed = JSON.parse(raw);
+            return {
+                ...createEmptyCasebook(),
+                ...parsed
+            };
+        } catch (error) {
+            console.warn("Failed to load casebook.", error);
+            return createEmptyCasebook();
+        }
+    }
+
+    function saveCasebook() {
+        window.localStorage.setItem(data.STORAGE_KEYS.casebook, JSON.stringify(state.casebook));
+    }
+
+    function loadTutorialStage() {
+        const raw = Number(window.localStorage.getItem(data.STORAGE_KEYS.tutorialStage));
+        if (Number.isNaN(raw) || raw < 0) {
+            return 0;
+        }
+
+        return Math.min(raw, 3);
+    }
+
+    function saveTutorialStage(value) {
+        state.tutorialStage = value;
+        window.localStorage.setItem(data.STORAGE_KEYS.tutorialStage, String(value));
+    }
+
+    function updateBuildStatus(mode, detail, ready = false) {
         setText(dom.buildChip, mode);
         setText(dom.runtimeNote, detail);
+        dom.startButton.disabled = !ready;
+        dom.startButton.textContent = ready ? "开始月抛" : "Edge 异常，暂时不能开局";
+        state.workerReady = ready;
     }
 
     async function loadRuntimeConfig() {
         const apiBase = dom.body.dataset.apiBase || "/api";
         const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), 1500);
+        const timeoutId = window.setTimeout(() => controller.abort(), 1800);
 
-        updateBuildStatus("静态模式", "Pages 可独立运行；Worker 接通后会在这里显示 Edge 状态。");
+        updateBuildStatus("检查 Edge", "正在确认 Worker 是否在线……", false);
 
         try {
             const response = await fetch(`${apiBase}/bootstrap`, {
@@ -115,17 +166,63 @@
 
             const payload = await response.json();
             state.runtime = payload;
-
-            const version = payload.app && payload.app.version ? ` · ${payload.app.version}` : "";
-            const aiStatus = payload.app && payload.app.aiEnabled ? "AI 边界已启用" : "AI 边界已预留";
-
-            updateBuildStatus("Edge 已连接", `${aiStatus}${version}`);
+            updateBuildStatus(
+                "Edge 已连接",
+                `Worker 权威判定已启用 · ${payload.app.version}`,
+                true
+            );
         } catch (error) {
-            console.warn("Falling back to static runtime.", error);
+            console.warn("Bootstrap failed.", error);
             state.runtime = null;
+            updateBuildStatus(
+                "Edge 离线",
+                "这版玩法已经迁到 Worker；接口不可用时不会允许开局。",
+                false
+            );
         } finally {
             window.clearTimeout(timeoutId);
         }
+    }
+
+    async function apiPost(path, payload) {
+        const apiBase = dom.body.dataset.apiBase || "/api";
+        const response = await fetch(`${apiBase}${path}`, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const body = await response.json().catch(() => ({}));
+
+        if (!response.ok || body.ok === false) {
+            const message = body.message || `Request failed: ${response.status}`;
+            const detail = body.detail ? ` (${body.detail})` : "";
+            throw new Error(`${message}${detail}`);
+        }
+
+        return body;
+    }
+
+    function setBusy(isBusy) {
+        state.busy = isBusy;
+        const disabled = isBusy || !state.uiState || state.uiState.gameOver;
+
+        dom.chatButton.disabled = isBusy || !state.uiState?.partner?.chat?.available;
+        dom.chatOptionButtons.forEach((button) => {
+            button.disabled = isBusy || button.disabled;
+        });
+        dom.testkitButton.disabled = disabled;
+        dom.hospitalButton.disabled = disabled;
+        dom.actionButtons.forEach((button) => {
+            if (!isBusy) {
+                return;
+            }
+
+            button.disabled = true;
+        });
     }
 
     function bindEvents() {
@@ -141,22 +238,42 @@
             button.addEventListener("click", () => toggleHelp(false));
         });
 
-        dom.testkitButton.addEventListener("click", () => useItem("testkit"));
-        dom.hospitalButton.addEventListener("click", goToHospital);
-
-        dom.actionButtons.forEach((button) => {
-            button.addEventListener("click", () => takeAction(button.dataset.action));
+        dom.casebookOpenButtons.forEach((button) => {
+            button.addEventListener("click", () => toggleCasebook(true));
         });
 
-        dom.nextButton.addEventListener("click", () => {
-            if (state.nextButtonMode === "close") {
-                setHidden(dom.feedbackOverlay, true);
-                state.nextButtonMode = "continue";
-                dom.nextButton.textContent = "继续";
+        dom.casebookCloseButtons.forEach((button) => {
+            button.addEventListener("click", () => toggleCasebook(false));
+        });
+
+        dom.casebookModal.addEventListener("click", (event) => {
+            if (event.target === dom.casebookModal) {
+                toggleCasebook(false);
+            }
+        });
+
+        dom.chatButton.addEventListener("click", () => {
+            if (!state.uiState?.partner?.chat?.available || state.busy) {
                 return;
             }
 
-            nextTurn();
+            setHidden(dom.chatPanel, !dom.chatPanel.hidden);
+        });
+
+        dom.chatOptionButtons.forEach((button) => {
+            button.addEventListener("click", () => askQuestion(button.dataset.questionType));
+        });
+
+        dom.testkitButton.addEventListener("click", () => performAction("use_testkit"));
+        dom.hospitalButton.addEventListener("click", () => performAction("hospital"));
+
+        dom.actionButtons.forEach((button) => {
+            button.addEventListener("click", () => performAction(button.dataset.action));
+        });
+
+        dom.nextButton.addEventListener("click", () => {
+            setHidden(dom.feedbackOverlay, true);
+            state.nextButtonMode = "close";
         });
 
         dom.restartButton.addEventListener("click", returnToIntro);
@@ -167,99 +284,263 @@
         setHidden(dom.helpModal, !shouldShow);
     }
 
-    function resetFeedbackState() {
-        dom.feedbackTitle.dataset.tone = "default";
-        dom.feedbackTitle.textContent = "";
-        dom.feedbackIcon.textContent = "";
-        dom.feedbackMessage.innerHTML = "";
-        dom.diseaseContent.innerHTML = "";
-
-        if (dom.historyContainer) {
-            dom.historyContainer.open = true;
+    function toggleCasebook(force) {
+        const shouldShow = typeof force === "boolean" ? force : dom.casebookModal.hidden;
+        if (shouldShow) {
+            renderCasebook();
         }
 
+        setHidden(dom.casebookModal, !shouldShow);
+    }
+
+    function resetFeedbackState() {
+        dom.feedbackTitle.dataset.tone = "default";
+        setText(dom.feedbackTitle, "");
+        setText(dom.feedbackIcon, "");
+        dom.feedbackMessage.innerHTML = "";
+        dom.diseaseContent.innerHTML = "";
+        dom.criticalReason.innerHTML = "";
+        dom.unlockCard.innerHTML = "";
         setHidden(dom.diseaseReport, true);
+        setHidden(dom.criticalReason, true);
+        setHidden(dom.unlockCard, true);
         setHidden(dom.historyContainer, true);
         setHidden(dom.nextButton, false);
         setHidden(dom.restartButton, true);
+        setHidden(document.getElementById("open-casebook-feedback-btn"), true);
         dom.nextButton.textContent = "继续";
-        state.nextButtonMode = "continue";
+        state.nextButtonMode = "close";
+        if (dom.historyContainer) {
+            dom.historyContainer.open = true;
+        }
     }
 
-    function startGame() {
-        setHidden(dom.introModal, true);
-        setHidden(dom.gameContainer, false);
-        initGame();
+    function renderCasebook() {
+        const totals = Object.fromEntries(
+            Object.keys(state.casebook).map((key) => [key, Object.keys(state.casebook[key] || {}).length])
+        );
+
+        dom.casebookSummary.innerHTML = "";
+        [
+            `已见人格 ${totals.personas}`,
+            `已见话术 ${totals.lieTypes}`,
+            `已达成结局 ${totals.endings}`,
+            `已确认病原 ${totals.diseases}`,
+            `已得称号 ${totals.titles}`
+        ].forEach((text) => {
+            const line = document.createElement("p");
+            line.textContent = text;
+            dom.casebookSummary.appendChild(line);
+        });
+
+        data.CASEBOOK_SECTIONS.forEach((section) => {
+            const container = dom.casebookLists[section.id];
+            container.innerHTML = "";
+            const entries = Object.values(state.casebook[section.id] || {});
+
+            if (entries.length === 0) {
+                const empty = document.createElement("span");
+                empty.className = "casebook-empty";
+                empty.textContent = "还没记下东西";
+                container.appendChild(empty);
+                return;
+            }
+
+            entries
+                .sort((left, right) => left.label.localeCompare(right.label, "zh-Hans-CN"))
+                .forEach((entry) => {
+                    const chip = document.createElement("span");
+                    chip.className = "casebook-chip";
+                    chip.textContent = entry.label;
+                    container.appendChild(chip);
+                });
+        });
     }
 
-    function returnToIntro() {
-        state.frustration = CONFIG.startFrustration;
-        state.anxiety = 0;
-        state.turn = 1;
-        state.items = { testkit: 1 };
-        state.currentPartner = null;
-        state.isInfected = false;
-        state.infectionData = null;
-        state.isGameOver = false;
-        state.history = [];
-        state.partnerFlagged = false;
+    function mergeCasebookUnlocks(unlocks) {
+        if (!unlocks) {
+            return [];
+        }
 
+        const added = [];
+        Object.entries(unlocks).forEach(([section, entries]) => {
+            if (!state.casebook[section] || !Array.isArray(entries)) {
+                return;
+            }
+
+            entries.forEach((entry) => {
+                if (!entry || !entry.id || state.casebook[section][entry.id]) {
+                    return;
+                }
+
+                state.casebook[section][entry.id] = entry;
+                added.push(entry.label);
+            });
+        });
+
+        if (added.length > 0) {
+            saveCasebook();
+        }
+
+        return added;
+    }
+
+    function renderLines(container, lines) {
+        container.innerHTML = "";
+        lines.forEach((line) => {
+            const paragraph = document.createElement("p");
+            paragraph.className = `feedback-line feedback-line--${line.tone || "default"}`;
+            paragraph.textContent = line.text;
+            container.appendChild(paragraph);
+        });
+    }
+
+    function renderSummary(container, summary) {
+        if (!summary) {
+            return;
+        }
+
+        const panel = document.createElement("div");
+        panel.className = "summary-stats";
+        panel.innerHTML = `
+            <h4 class="summary-stats__title">生涯统计</h4>
+            <div class="summary-stats__grid">
+                <div class="summary-stats__row"><span>✅ 理智享受</span><strong>${summary.enjoyCount}</strong></div>
+                <div class="summary-stats__row"><span>🛡️ 正确离开</span><strong>${summary.leaveCount}</strong></div>
+                <div class="summary-stats__row"><span>😰 死里逃生</span><strong>${summary.escapeCount}</strong></div>
+                <div class="summary-stats__row"><span>👋 遗憾错过</span><strong>${summary.missCount}</strong></div>
+                <div class="summary-stats__row summary-stats__row--danger"><span>💀 被感染次数</span><strong>${summary.infectedCount}</strong></div>
+            </div>
+            <div class="summary-stats__footer">
+                <span>⏱️ 存活回合</span>
+                <strong>${summary.turnsSurvived}</strong>
+            </div>
+        `;
+        container.appendChild(panel);
+    }
+
+    function renderUnlocks(unlockLabels) {
+        dom.unlockCard.innerHTML = "";
+        if (unlockLabels.length === 0) {
+            setHidden(dom.unlockCard, true);
+            return;
+        }
+
+        const title = document.createElement("strong");
+        title.className = "unlock-card__title";
+        title.textContent = "案件簿新增记录";
+        dom.unlockCard.appendChild(title);
+
+        unlockLabels.forEach((label) => {
+            const chip = document.createElement("span");
+            chip.className = "casebook-chip";
+            chip.textContent = label;
+            dom.unlockCard.appendChild(chip);
+        });
+
+        setHidden(dom.unlockCard, false);
+    }
+
+    function renderHistoryList(history) {
+        dom.historyList.innerHTML = "";
+
+        history.forEach((item) => {
+            const entry = document.createElement("div");
+            const cluesMarkup = item.clues
+                .map((clue) => `<span class="history-tag">${escapeHtml(clue)}</span>`)
+                .join("");
+            const diseaseMarkup = item.diseases.length > 0
+                ? `<span class="history-disease">携带: ${item.diseases.map((name) => escapeHtml(name)).join("，")}</span>`
+                : "<span class=\"history-safe\">健康</span>";
+
+            entry.className = "history-entry";
+            entry.innerHTML = `
+                <div class="history-avatar">
+                    <span>${item.avatar}</span>
+                    ${item.diseases.length > 0 ? "<span class=\"history-status\">🦠</span>" : ""}
+                </div>
+                <div class="history-copy">
+                    <div class="history-scene">${escapeHtml(item.sceneLabel)}</div>
+                    <div class="history-tags">${cluesMarkup}</div>
+                    <div class="history-subline">${diseaseMarkup}</div>
+                    <div class="history-subline history-subline--reason">${escapeHtml(item.reason || "")}</div>
+                </div>
+                <div class="history-outcome history-outcome--${item.outcomeTone}">
+                    ${escapeHtml(item.outcomeLabel)}
+                </div>
+            `;
+
+            dom.historyList.appendChild(entry);
+        });
+
+        setHidden(dom.historyContainer, history.length === 0);
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#39;");
+    }
+
+    function showEvent(event, uiState, addedUnlocks) {
         resetFeedbackState();
-        updateStatsUI();
-        setHidden(dom.feedbackOverlay, true);
-        setHidden(dom.gameContainer, true);
-        setHidden(dom.helpModal, true);
-        setHidden(dom.introModal, false);
+        setText(dom.feedbackTitle, event.title);
+        setText(dom.feedbackIcon, event.icon);
+        dom.feedbackTitle.dataset.tone = event.tone || "default";
+        renderLines(dom.feedbackMessage, event.lines || []);
+        renderSummary(dom.feedbackMessage, uiState.summary);
+
+        if (event.disease) {
+            dom.diseaseContent.innerHTML = `<p><b>确诊：</b>${escapeHtml(event.disease.name)}</p><p><b>途径：</b>${escapeHtml(event.disease.transmission)}</p>`;
+            setHidden(dom.diseaseReport, false);
+        }
+
+        if (event.criticalReason) {
+            dom.criticalReason.textContent = event.criticalReason;
+            setHidden(dom.criticalReason, false);
+        }
+
+        renderUnlocks(addedUnlocks);
+        renderHistoryList(uiState.history || []);
+
+        if ((uiState.history || []).length > 0) {
+            dom.historyContainer.open = true;
+        }
+
+        if (event.closeMode === "restart") {
+            setHidden(dom.nextButton, true);
+            setHidden(dom.restartButton, false);
+            setHidden(document.getElementById("open-casebook-feedback-btn"), false);
+        } else {
+            setText(dom.nextButton, event.closeLabel || "继续");
+            state.nextButtonMode = event.closeMode || "close";
+        }
+
+        setHidden(dom.feedbackOverlay, false);
     }
 
-    function initGame() {
-        state.frustration = CONFIG.startFrustration;
-        state.anxiety = 0;
-        state.turn = 1;
-        state.items = { testkit: 1 };
-        state.currentPartner = null;
-        state.isInfected = false;
-        state.infectionData = null;
-        state.isGameOver = false;
-        state.history = [];
-        state.partnerFlagged = false;
+    function renderClues(clues) {
+        dom.tagsContainer.innerHTML = "";
+        clues.forEach((clue) => {
+            const chip = document.createElement("div");
+            if (!clue.revealed) {
+                chip.className = "tag tag--hidden";
+                chip.innerHTML = "<span>❓</span><span>隐藏信息</span>";
+                chip.title = clue.detail || "";
+            } else {
+                chip.className = `tag tag--${clue.tone || "neutral"}`;
+                chip.innerHTML = `<span class="tag-icon">${getClueIcon(clue.tone)}</span><span>${escapeHtml(clue.text)}</span>`;
+                chip.title = clue.detail || "";
+            }
 
-        resetFeedbackState();
-        updateStatsUI();
-        generateNewPartner();
+            dom.tagsContainer.appendChild(chip);
+        });
     }
 
-    function getTagTone(tag) {
-        if (tag.constraint) {
-            return "constraint";
-        }
-
-        if (tag.color.includes("red") || tag.color.includes("rose")) {
-            return "risk";
-        }
-
-        if (tag.color.includes("purple")) {
-            return "warning";
-        }
-
-        if (tag.color.includes("emerald") || tag.color.includes("sky")) {
-            return "safe";
-        }
-
-        if (tag.color.includes("amber")) {
-            return "caution";
-        }
-
-        return "neutral";
-    }
-
-    function getTagIcon(tag) {
-        if (tag.constraint) {
-            return "🚫";
-        }
-
-        const tone = getTagTone(tag);
-
+    function getClueIcon(tone) {
         if (tone === "risk") {
             return "⚠️";
         }
@@ -272,594 +553,228 @@
             return "🛡️";
         }
 
+        if (tone === "constraint") {
+            return "🚫";
+        }
+
         if (tone === "caution") {
             return "🟠";
+        }
+
+        if (tone === "hidden") {
+            return "❓";
         }
 
         return "⏺";
     }
 
-    function generateNewPartner() {
-        const numTags = Math.floor(Math.random() * 2) + 3;
-        const partnerTags = [];
-        const selectedIndices = new Set();
-        const isCarrier = Math.random() < 0.4;
-        const hasConstraint = Math.random() < 0.4;
+    function syncChatOptions(chatState) {
+        setText(dom.chatButtonLabel, chatState.label || "试探 / 聊天");
+        setText(dom.chatButtonNote, chatState.available ? `还剩 ${chatState.remaining} 次` : "聊不动了");
+        dom.chatButton.disabled = state.busy || !chatState.available;
 
-        let loopLimit = 0;
-        while (partnerTags.length < numTags && loopLimit < 100) {
-            loopLimit += 1;
-            const idx = Math.floor(Math.random() * ALL_TAGS.length);
-
-            if (selectedIndices.has(idx)) {
-                continue;
-            }
-
-            const tagTemplate = ALL_TAGS[idx];
-
-            if (isCarrier && partnerTags.length === 0 && !tagTemplate.color.includes("red") && !tagTemplate.color.includes("purple")) {
-                continue;
-            }
-
-            if (hasConstraint && !partnerTags.some((tag) => tag.constraint) && !tagTemplate.constraint && loopLimit < 50) {
-                continue;
-            }
-
-            const currentConstraints = partnerTags.map((tag) => tag.constraint).filter(Boolean);
-            if (tagTemplate.constraint) {
-                if (tagTemplate.constraint === "no_oral" && currentConstraints.includes("oral_only")) {
-                    continue;
-                }
-
-                if (tagTemplate.constraint === "oral_only" && currentConstraints.includes("no_oral")) {
-                    continue;
-                }
-            }
-
-            selectedIndices.add(idx);
-
-            let isHidden = false;
-            const currentHiddenCount = partnerTags.filter((tag) => !tag.revealed).length;
-            if (currentHiddenCount === 0 && tagTemplate.hiddenChance > 0) {
-                isHidden = Math.random() < tagTemplate.hiddenChance;
-            }
-
-            partnerTags.push({
-                ...tagTemplate,
-                revealed: !isHidden
-            });
-        }
-
-        if (partnerTags.every((tag) => !tag.revealed) && partnerTags[0]) {
-            partnerTags[0].revealed = true;
-        }
-
-        let activeDiseases = [];
-
-        if (Math.random() < 0.05) {
-            const keys = Object.keys(DISEASES);
-            activeDiseases.push(keys[Math.floor(Math.random() * keys.length)]);
-        }
-
-        partnerTags.forEach((tag) => {
-            if (tag.risk) {
-                Object.entries(tag.risk).forEach(([diseaseKey, probability]) => {
-                    if (Math.random() < probability && !activeDiseases.includes(diseaseKey)) {
-                        activeDiseases.push(diseaseKey);
-                    }
-                });
-            }
-
-            if (tag.safeChance && Math.random() < tag.safeChance) {
-                activeDiseases = [];
-            }
-        });
-
-        state.partnerFlagged = false;
-        state.currentPartner = {
-            tags: partnerTags,
-            diseases: activeDiseases,
-            avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)]
-        };
-
-        renderPartner();
-    }
-
-    function updateStatsUI() {
-        setWidth(dom.frustrationBar, `${state.frustration}%`);
-        setText(dom.frustrationValue, `${state.frustration}%`);
-        setWidth(dom.anxietyBar, `${state.anxiety}%`);
-        setText(dom.anxietyValue, `${state.anxiety}%`);
-        setText(dom.turnCount, String(state.turn).padStart(2, "0"));
-        setText(dom.testkitCount, `x${state.items.testkit}`);
-
-        if (dom.testkitCount) {
-            dom.testkitCount.classList.toggle("is-empty", state.items.testkit === 0);
-        }
-
-        if (state.anxiety >= 80) {
-            dom.gameContent.classList.add("panic-mode");
-            setHidden(dom.panicWarning, false);
-        } else {
-            dom.gameContent.classList.remove("panic-mode");
-            setHidden(dom.panicWarning, true);
-        }
-    }
-
-    function resetActionButtons() {
-        ACTION_BUTTON_IDS.forEach((id) => {
-            const button = document.getElementById(id);
-
-            if (!button) {
+        dom.chatOptionButtons.forEach((button) => {
+            const option = chatState.options.find((item) => item.id === button.dataset.questionType);
+            if (!option) {
                 return;
             }
 
-            button.disabled = false;
-            button.classList.remove("is-disabled");
+            button.disabled = state.busy || option.disabled;
+            button.innerHTML = `<strong>${option.label}</strong><span>${option.reason || option.prompt}</span>`;
+        });
 
-            const overlay = button.querySelector(".action-lock");
-            if (overlay) {
-                overlay.remove();
+        if (!chatState.available) {
+            setHidden(dom.chatPanel, true);
+        }
+    }
+
+    function syncActionLocks(actionLocks) {
+        dom.actionButtons.forEach((button) => {
+            const actionType = button.dataset.action;
+            const actionState = actionLocks[actionType];
+            const lock = button.querySelector(".action-lock");
+            if (!actionState || !actionState.disabled) {
+                button.disabled = state.busy;
+                button.classList.remove("is-disabled");
+                if (lock) {
+                    lock.remove();
+                }
+                return;
             }
+
+            button.disabled = true;
+            button.classList.add("is-disabled");
+            if (lock) {
+                lock.textContent = "对方拒绝";
+            } else {
+                const overlay = document.createElement("span");
+                overlay.className = "action-lock";
+                overlay.textContent = "对方拒绝";
+                button.appendChild(overlay);
+            }
+            button.title = actionState.reason || "";
         });
     }
 
-    function disableActionButton(id) {
-        const button = document.getElementById(id);
+    function renderUiState(uiState) {
+        state.uiState = uiState;
+        setWidth(dom.frustrationBar, `${uiState.stats.frustration}%`);
+        setText(dom.frustrationValue, `${uiState.stats.frustration}%`);
+        setWidth(dom.anxietyBar, `${uiState.stats.anxiety}%`);
+        setText(dom.anxietyValue, `${uiState.stats.anxiety}%`);
+        setText(dom.turnCount, String(uiState.stats.turn).padStart(2, "0"));
+        setText(dom.testkitCount, `x${uiState.stats.testkit}`);
+        dom.testkitCount.classList.toggle("is-empty", uiState.stats.testkit === 0);
+        setHidden(dom.panicWarning, !uiState.stats.panicMode);
+        dom.gameContent.classList.toggle("panic-mode", uiState.stats.panicMode);
 
-        if (!button || button.disabled) {
+        const partner = uiState.partner;
+        if (!partner) {
             return;
         }
-
-        button.disabled = true;
-        button.classList.add("is-disabled");
-
-        const overlay = document.createElement("span");
-        overlay.className = "action-lock";
-        overlay.textContent = "对方拒绝";
-        button.appendChild(overlay);
-    }
-
-    function applyConstraints(constraints) {
-        constraints.forEach((constraint) => {
-            if (constraint === "no_condom") {
-                disableActionButton("btn-oral-condom");
-                disableActionButton("btn-sex-condom");
-            } else if (constraint === "condom_only") {
-                disableActionButton("btn-oral-raw");
-                disableActionButton("btn-sex-raw");
-            } else if (constraint === "no_oral") {
-                disableActionButton("btn-oral-condom");
-                disableActionButton("btn-oral-raw");
-            } else if (constraint === "oral_only") {
-                disableActionButton("btn-sex-condom");
-                disableActionButton("btn-sex-raw");
-            }
-        });
-    }
-
-    function renderPartner() {
-        const partner = state.currentPartner;
-        const container = dom.tagsContainer;
-        const constraints = [];
-        const isPanic = state.anxiety >= 80;
-        let hiddenCount = 0;
 
         setText(dom.avatarEmoji, partner.avatar);
-        setText(dom.flirtText, `"${FLIRT_LINES[Math.floor(Math.random() * FLIRT_LINES.length)]}"`);
-        setHidden(dom.partnerStatus, !state.partnerFlagged);
-        container.innerHTML = "";
+        setText(dom.sceneLabel, `场景：${partner.sceneLabel}`);
+        setText(dom.flirtText, `“${partner.opener}”`);
+        setHidden(dom.partnerStatus, !partner.flagged);
+        renderClues(partner.clues);
+        syncChatOptions(partner.chat);
+        syncActionLocks(partner.actionLocks);
 
-        partner.tags.forEach((tag) => {
-            const forceHide = isPanic && Math.random() < 0.5;
-            const chip = document.createElement("div");
+        dom.testkitButton.disabled = state.busy || uiState.stats.testkit <= 0 || uiState.gameOver;
+        dom.hospitalButton.disabled = state.busy || uiState.gameOver;
+    }
 
-            if (!tag.revealed || forceHide) {
-                hiddenCount += 1;
-                chip.className = "tag tag--hidden";
-                chip.innerHTML = isPanic ? "<span class=\"tag-blur\">???</span>" : "<span>❓</span> 隐藏信息";
-            } else {
-                if (tag.constraint) {
-                    constraints.push(tag.constraint);
-                }
+    function syncPostBusyControls() {
+        if (!state.uiState?.partner) {
+            return;
+        }
 
-                chip.className = `tag tag--${getTagTone(tag)}`;
-                chip.title = tag.clue || "";
-                chip.innerHTML = `<span class="tag-icon">${getTagIcon(tag)}</span><span>${tag.text}</span>`;
+        syncChatOptions(state.uiState.partner.chat);
+        syncActionLocks(state.uiState.partner.actionLocks);
+        dom.testkitButton.disabled = state.busy || state.uiState.stats.testkit <= 0 || state.uiState.gameOver;
+        dom.hospitalButton.disabled = state.busy || state.uiState.gameOver;
+    }
+
+    async function withBusy(task) {
+        if (state.busy) {
+            return;
+        }
+
+        setBusy(true);
+
+        try {
+            await task();
+        } catch (error) {
+            showFatalEdgeError(error);
+        } finally {
+            setBusy(false);
+            syncPostBusyControls();
+        }
+    }
+
+    async function startGame() {
+        if (!state.workerReady) {
+            return;
+        }
+
+        await withBusy(async () => {
+            const payload = await apiPost("/game/start", {
+                tutorialStage: state.tutorialStage,
+                mode: data.MODE
+            });
+            const addedUnlocks = mergeCasebookUnlocks(payload.casebookUnlocks);
+
+            state.sessionToken = payload.sessionToken;
+            saveTutorialStage(payload.nextTutorialStage);
+            renderUiState(payload.uiState);
+            setHidden(dom.introModal, true);
+            setHidden(dom.gameContainer, false);
+            setHidden(dom.helpModal, true);
+            setHidden(dom.casebookModal, true);
+            setHidden(dom.chatPanel, true);
+
+            if (payload.introEvent) {
+                showEvent(payload.introEvent, payload.uiState, addedUnlocks);
             }
-
-            container.appendChild(chip);
-        });
-
-        resetActionButtons();
-        if (constraints.length > 0) {
-            applyConstraints(constraints);
-        }
-
-        if (hiddenCount === 0 && !isPanic) {
-            dom.chatButton.disabled = true;
-            dom.chatButton.classList.add("is-disabled");
-            dom.chatButton.innerHTML = "<span>💬</span><span>已完全了解</span>";
-        } else {
-            dom.chatButton.disabled = false;
-            dom.chatButton.classList.remove("is-disabled");
-            dom.chatButton.innerHTML = "<span>💬</span><span>试探 / 聊天</span><span class=\"button-note\">压抑值+3</span>";
-        }
-    }
-
-    function advanceTime(frustrationDelta, anxietyDelta = 0) {
-        state.turn += 1;
-        state.frustration += frustrationDelta;
-        state.anxiety += anxietyDelta;
-
-        if (state.anxiety > 20) {
-            state.anxiety += CONFIG.anxietyGainPassive;
-        }
-
-        if (state.frustration > 100) {
-            state.frustration = 100;
-        }
-
-        if (state.anxiety > 100) {
-            state.anxiety = 100;
-        }
-
-        updateStatsUI();
-
-        if (state.frustration >= 100) {
-            showGameOver(
-                "欲火焚身",
-                "长期的压抑让你彻底失去了理智。你无法再思考后果，在绝望中发生了一次随机的高危行为。",
-                "🤯"
-            );
-            return true;
-        }
-
-        if (state.anxiety >= 100) {
-            showGameOver(
-                "精神崩溃",
-                "巨大的心理压力压垮了你。你开始出现幻觉，被送往了精神病院，游戏结束。",
-                "😵‍💫"
-            );
-            return true;
-        }
-
-        return false;
-    }
-
-    function recordHistory(action, infectedThisTurn) {
-        const partner = state.currentPartner;
-        const isDiseased = partner.diseases.length > 0;
-        let outcomeLabel = "";
-        let outcomeTone = "neutral";
-
-        if (action === "refuse") {
-            if (isDiseased) {
-                outcomeLabel = "🛡️ 正确离开";
-                outcomeTone = "leave";
-            } else {
-                outcomeLabel = "👋 遗憾错过";
-                outcomeTone = "miss";
-            }
-        } else if (infectedThisTurn) {
-            outcomeLabel = "💀 被 ta 感染";
-            outcomeTone = "infected";
-        } else if (isDiseased) {
-            outcomeLabel = "😰 死里逃生";
-            outcomeTone = "escape";
-        } else {
-            outcomeLabel = "✅ 理智享受";
-            outcomeTone = "enjoy";
-        }
-
-        state.history.push({
-            avatar: partner.avatar,
-            tags: partner.tags.map((tag) => ({ text: tag.text })),
-            diseases: partner.diseases.slice(),
-            action,
-            outcomeLabel,
-            outcomeTone
         });
     }
 
-    function renderHistoryList() {
-        dom.historyList.innerHTML = "";
-
-        state.history.forEach((item) => {
-            const entry = document.createElement("div");
-            const tagsMarkup = item.tags
-                .map((tag) => `<span class="history-tag">${tag.text}</span>`)
-                .join("");
-
-            const diseaseMarkup = item.diseases.length > 0
-                ? `<span class="history-disease">携带: ${item.diseases.map((key) => DISEASES[key].name).join("，")}</span>`
-                : "<span class=\"history-safe\">健康</span>";
-
-            entry.className = "history-entry";
-            entry.innerHTML = `
-                <div class="history-avatar">
-                    <span>${item.avatar}</span>
-                    ${item.diseases.length > 0 ? "<span class=\"history-status\">🦠</span>" : ""}
-                </div>
-                <div class="history-copy">
-                    <div class="history-tags">${tagsMarkup}</div>
-                    <div class="history-subline">${diseaseMarkup}</div>
-                </div>
-                <div class="history-outcome history-outcome--${item.outcomeTone}">
-                    ${item.outcomeLabel}
-                </div>
-            `;
-
-            dom.historyList.appendChild(entry);
-        });
-    }
-
-    function useItem(type) {
-        if (type !== "testkit" || state.items.testkit <= 0 || !state.currentPartner) {
+    async function askQuestion(questionType) {
+        if (!state.sessionToken) {
             return;
         }
 
-        state.items.testkit -= 1;
+        await withBusy(async () => {
+            const payload = await apiPost("/game/chat", {
+                sessionToken: state.sessionToken,
+                questionType
+            });
+            const addedUnlocks = mergeCasebookUnlocks(payload.casebookUnlocks);
 
-        const partner = state.currentPartner;
-        let message = "";
-        let icon = "";
-
-        if (partner.diseases.length > 0) {
-            const names = partner.diseases.map((key) => DISEASES[key].name).join("、");
-            message = "<span class=\"u-danger\">⚠️ 阳性反应！</span><br>病原体：" + names + "。<br>请立即离开。";
-            icon = "🦠";
-            state.partnerFlagged = true;
-        } else {
-            message = "<span class=\"u-success\">✅ 阴性。</span><br>未检测到常见病原体。<br><span class=\"u-muted\">注：无法检测窗口期极短的病毒。</span>";
-            icon = "🛡️";
-            state.partnerFlagged = false;
-        }
-
-        partner.tags.forEach((tag) => {
-            tag.revealed = true;
+            state.sessionToken = payload.sessionToken;
+            renderUiState(payload.uiState);
+            setHidden(dom.chatPanel, true);
+            showEvent(payload.event, payload.uiState, addedUnlocks);
         });
-
-        renderPartner();
-        updateStatsUI();
-        showFeedback("检测结果", message, icon, true);
     }
 
-    function goToHospital() {
-        const survived = !advanceTime(CONFIG.hospitalCost, 0);
-
-        if (!survived) {
+    async function performAction(actionType) {
+        if (!state.sessionToken) {
             return;
         }
 
-        state.anxiety = 0;
-        updateStatsUI();
+        await withBusy(async () => {
+            const payload = await apiPost("/game/action", {
+                sessionToken: state.sessionToken,
+                actionType
+            });
+            const addedUnlocks = mergeCasebookUnlocks(payload.casebookUnlocks);
 
-        if (state.isInfected) {
-            showGameOver(
-                "确诊感染",
-                "很遗憾，医院的检查结果显示你已感染。<br>之前的侥幸心理终究没能救你。",
-                "🏥",
-                state.infectionData
-            );
-            return;
-        }
+            state.sessionToken = payload.sessionToken;
+            renderUiState(payload.uiState);
+            setHidden(dom.chatPanel, true);
+            showEvent(payload.event, payload.uiState, addedUnlocks);
+        });
+    }
 
-        showFeedback(
-            "虚惊一场",
-            "<span class=\"u-success\">检测结果阴性。</span><br>你身体是健康的。心理压力已清空，但你也为此浪费了宝贵的时间。",
-            "🏥",
-            true
+    function returnToIntro() {
+        state.sessionToken = null;
+        state.uiState = null;
+        setHidden(dom.feedbackOverlay, true);
+        setHidden(dom.helpModal, true);
+        setHidden(dom.casebookModal, true);
+        setHidden(dom.gameContainer, true);
+        setHidden(dom.chatPanel, true);
+        setHidden(dom.introModal, false);
+        renderCasebook();
+    }
+
+    function showFatalEdgeError(error) {
+        console.error(error);
+        updateBuildStatus("Edge 异常", "Worker 中断，当前版本无法继续。请稍后重试。", false);
+        resetFeedbackState();
+        showEvent(
+            {
+                title: "Edge 中断",
+                icon: "⚠️",
+                tone: "danger",
+                lines: [
+                    { tone: "danger", text: "Worker 没接住这次请求，当前进度无法继续。" },
+                    { tone: "muted", text: "这版不再保留本地旧逻辑回退。返回首页后可以再试一次。" }
+                ],
+                closeMode: "restart",
+                closeLabel: "返回首页"
+            },
+            {
+                history: state.uiState?.history || [],
+                summary: state.uiState?.summary || null
+            },
+            []
         );
     }
 
-    function nextTurn() {
-        setHidden(dom.feedbackOverlay, true);
-        resetFeedbackState();
-        generateNewPartner();
-    }
-
-    function takeAction(actionType) {
-        if (state.frustration >= 100 || state.anxiety >= 100 || !state.currentPartner) {
-            return;
-        }
-
-        if (actionType === "chat") {
-            const hiddenIndices = state.currentPartner.tags
-                .map((tag, index) => (!tag.revealed ? index : -1))
-                .filter((index) => index !== -1);
-
-            if (hiddenIndices.length > 0) {
-                const pickedIndex = hiddenIndices[Math.floor(Math.random() * hiddenIndices.length)];
-                state.currentPartner.tags[pickedIndex].revealed = true;
-            }
-
-            if (!advanceTime(CONFIG.chatCost, 0)) {
-                renderPartner();
-            }
-            return;
-        }
-
-        const partner = state.currentPartner;
-        let infectedThisTurn = false;
-
-        if (actionType === "refuse") {
-            recordHistory("refuse", false);
-
-            if (!advanceTime(CONFIG.passiveGain + CONFIG.refuseCost, 0)) {
-                showFeedback("继续寻找", "你选择了离开。压抑值上升，但至少你暂时是安全的。", "🏃");
-            }
-            return;
-        }
-
-        const reduction = CONFIG.rewards[actionType];
-        const anxietyGain = CONFIG.stress[actionType];
-
-        if (!state.isInfected && partner.diseases.length > 0) {
-            for (const diseaseKey of partner.diseases) {
-                const disease = DISEASES[diseaseKey];
-                let chance = 0;
-
-                if (actionType === "sex_raw") {
-                    chance = 0.95;
-                } else if (actionType === "oral_raw") {
-                    chance = disease.riskType.includes("skin") || disease.riskType.includes("mucous") ? 0.5 : 0.1;
-                } else if (actionType === "sex_condom") {
-                    if (disease.riskType === "skin_hair") {
-                        chance = 1.0;
-                    } else if (disease.riskType === "contact") {
-                        chance = 0.3;
-                    } else {
-                        chance = 0.02;
-                    }
-                } else if (actionType === "oral_condom") {
-                    chance = 0.01;
-                }
-
-                if (Math.random() < chance) {
-                    state.isInfected = true;
-                    state.infectionData = disease;
-                    infectedThisTurn = true;
-                    break;
-                }
-            }
-        }
-
-        recordHistory(actionType, infectedThisTurn);
-
-        state.frustration -= reduction;
-        const frustrationDelta = CONFIG.passiveGain - reduction;
-
-        if (advanceTime(frustrationDelta, anxietyGain)) {
-            return;
-        }
-
-        if (state.frustration < 0) {
-            state.frustration = 0;
-            updateStatsUI();
-        }
-
-        if (state.frustration === 0) {
-            if (state.isInfected) {
-                showGameOver(
-                    "糟糕的胜利",
-                    "你的压抑值清零了，你感到无比轻松...<br>但在几天后，你的身体开始出现异常反应。<br>你虽然释放了欲望，却输掉了健康。",
-                    "🥀",
-                    state.infectionData
-                );
-            } else {
-                showWin();
-            }
-            return;
-        }
-
-        let title = "宣泄与不安";
-        let icon = "🍬";
-        let message = `欲望得到了释放。<br>生理压抑 <span class="u-success">-${reduction}</span>`;
-
-        if (anxietyGain > 5) {
-            message += `<br>心理压力 <span class="u-warning">+${anxietyGain}</span>`;
-            icon = "😰";
-        }
-
-        if (state.isInfected) {
-            message += "<br><span class=\"u-muted\">你感觉到了一丝异样，但也许只是错觉...？</span>";
-        } else if (partner.diseases.length > 0) {
-            message += "<br><span class=\"u-muted\">虽然过程很惊险，但你似乎运气不错...暂时。</span>";
-        }
-
-        showFeedback(title, message, icon);
-    }
-
-    function getStatsHTML() {
-        const counts = { enjoy: 0, escape: 0, leave: 0, miss: 0, infected: 0 };
-
-        state.history.forEach((item) => {
-            if (item.outcomeTone === "enjoy") {
-                counts.enjoy += 1;
-            } else if (item.outcomeTone === "escape") {
-                counts.escape += 1;
-            } else if (item.outcomeTone === "leave") {
-                counts.leave += 1;
-            } else if (item.outcomeTone === "miss") {
-                counts.miss += 1;
-            } else if (item.outcomeTone === "infected") {
-                counts.infected += 1;
-            }
-        });
-
-        return `
-            <div class="summary-stats">
-                <h4 class="summary-stats__title">生涯统计</h4>
-                <div class="summary-stats__grid">
-                    <div class="summary-stats__row"><span>✅ 理智享受</span><strong>${counts.enjoy}</strong></div>
-                    <div class="summary-stats__row"><span>🛡️ 正确离开</span><strong>${counts.leave}</strong></div>
-                    <div class="summary-stats__row"><span>😰 死里逃生</span><strong>${counts.escape}</strong></div>
-                    <div class="summary-stats__row"><span>👋 遗憾错过</span><strong>${counts.miss}</strong></div>
-                    <div class="summary-stats__row summary-stats__row--danger"><span>💀 被感染次数</span><strong>${counts.infected}</strong></div>
-                </div>
-                <div class="summary-stats__footer">
-                    <span>⏱️ 存活回合</span>
-                    <strong>${state.turn - 1}</strong>
-                </div>
-            </div>
-        `;
-    }
-
-    function showFeedback(title, message, icon, isSimpleAlert = false) {
-        resetFeedbackState();
-        dom.feedbackTitle.textContent = title;
-        dom.feedbackIcon.textContent = icon;
-        dom.feedbackMessage.innerHTML = message;
-        setHidden(dom.feedbackOverlay, false);
-
-        if (isSimpleAlert) {
-            state.nextButtonMode = "close";
-            dom.nextButton.textContent = "关闭";
-        }
-    }
-
-    function showGameOver(title, message, icon, disease = null) {
-        state.isGameOver = true;
-        resetFeedbackState();
-
-        dom.feedbackTitle.textContent = title;
-        dom.feedbackTitle.dataset.tone = "danger";
-        dom.feedbackIcon.textContent = icon;
-        dom.feedbackMessage.innerHTML = message + getStatsHTML();
-
-        if (disease) {
-            dom.diseaseContent.innerHTML = `<p><b>确诊：</b>${disease.name}</p><p><b>途径：</b>${disease.transmission}</p>`;
-            setHidden(dom.diseaseReport, false);
-        }
-
-        renderHistoryList();
-        dom.historyContainer.open = true;
-        setHidden(dom.historyContainer, false);
-        setHidden(dom.nextButton, true);
-        setHidden(dom.restartButton, false);
-        setHidden(dom.feedbackOverlay, false);
-    }
-
-    function showWin() {
-        state.isGameOver = true;
-        resetFeedbackState();
-
-        dom.feedbackTitle.textContent = "幸存者";
-        dom.feedbackTitle.dataset.tone = "success";
-        dom.feedbackIcon.textContent = "✨";
-        dom.feedbackMessage.innerHTML =
-            "你成功清零了压抑值，且身体健康。<br><br>在这场充满迷雾和风险的游戏中，你靠着谨慎、策略和一点运气活了下来。" +
-            getStatsHTML();
-
-        renderHistoryList();
-        dom.historyContainer.open = true;
-        setHidden(dom.historyContainer, false);
-        setHidden(dom.nextButton, true);
-        setHidden(dom.restartButton, false);
-        setHidden(dom.feedbackOverlay, false);
-    }
-
     bindEvents();
+    renderCasebook();
     await loadRuntimeConfig();
 })();

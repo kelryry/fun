@@ -20,7 +20,7 @@
                         <span class="turn-chip__label">回合</span>
                         <strong id="turn-count" class="turn-chip__value">01</strong>
                     </div>
-                    <div id="build-chip" class="build-chip">静态模式</div>
+                    <div id="build-chip" class="build-chip">Edge 检查中</div>
                 </div>
             </header>
 
@@ -43,7 +43,7 @@
                     <div class="meter-track">
                         <div id="anxiety-bar" class="meter-fill meter-fill--anxiety"></div>
                     </div>
-                    <p id="panic-warning" class="panic-warning" hidden>⚠️ 恐慌状态：视线模糊，无法看清细节</p>
+                    <p id="panic-warning" class="panic-warning" hidden>⚠️ 恐慌状态：你会听见很多话，但抓不住真正有用的细节。</p>
                 </div>
 
                 <div class="quick-actions">
@@ -62,7 +62,7 @@
                             <span class="hospital-card__icon">🏥</span>
                             <span class="hospital-card__copy">
                                 <strong>去医院检查</strong>
-                                <span>压抑值 +10 / 清空压力</span>
+                                <span>压抑值 +10 / 压力清零</span>
                             </span>
                         </button>
                     </div>
@@ -76,36 +76,55 @@
                         <span id="partner-status" class="partner-status" hidden>⚠️</span>
                     </div>
                     <h2 class="partner-title">潜在伴侣</h2>
+                    <p id="scene-label" class="partner-scene">场景：-</p>
                     <p id="flirt-text" class="partner-quote">"..."</p>
                 </div>
 
                 <div id="tags-container" class="tags-grid" aria-live="polite"></div>
 
                 <div class="action-stack">
-                    <button id="btn-chat" class="button button--chat" type="button" data-action="chat">
+                    <button id="btn-chat" class="button button--chat" type="button">
                         <span>💬</span>
-                        <span>试探 / 聊天</span>
-                        <span class="button-note">压抑值+3</span>
+                        <span id="chat-button-label">试探 / 聊天</span>
+                        <span id="chat-button-note" class="button-note">还剩 2 次</span>
                     </button>
+
+                    <div id="chat-panel" class="chat-panel" hidden>
+                        <div class="chat-panel__hint">从一个角度切进去，别把人一次问死。</div>
+                        <div class="chat-panel__grid">
+                            <button id="chat-smalltalk-btn" class="chat-option" type="button" data-question-type="smalltalk">
+                                <strong>套话</strong>
+                                <span>聊生活细节</span>
+                            </button>
+                            <button id="chat-probe-btn" class="chat-option" type="button" data-question-type="probe">
+                                <strong>追问</strong>
+                                <span>逼时间线</span>
+                            </button>
+                            <button id="chat-boundary-btn" class="chat-option" type="button" data-question-type="boundary">
+                                <strong>压边界</strong>
+                                <span>看底线态度</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="action-divider"></div>
 
                     <div class="action-grid">
                         <button id="btn-oral-condom" class="button action-button action-button--mild" type="button" data-action="oral_condom">
                             <span>🍬 戴套口交</span>
-                            <small>收益极低 | 压力 +2</small>
+                            <small>低收益 | 很稳</small>
                         </button>
                         <button id="btn-sex-condom" class="button action-button action-button--safe" type="button" data-action="sex_condom">
                             <span>🛡️ 戴套性交</span>
-                            <small>收益一般 | 压力 +5</small>
+                            <small>主力释放 | 稳定</small>
                         </button>
                         <button id="btn-oral-raw" class="button action-button action-button--risk" type="button" data-action="oral_raw">
                             <span>🍭 无套口交</span>
-                            <small>收益中等 | 压力 +15</small>
+                            <small>中收益 | 风险抬头</small>
                         </button>
                         <button id="btn-sex-raw" class="button action-button action-button--danger" type="button" data-action="sex_raw">
                             <span>🔥 无套性交</span>
-                            <small>收益较高 | 压力 +30</small>
+                            <small>高收益 | 最大赌局</small>
                         </button>
                     </div>
 
@@ -123,21 +142,22 @@
             <div class="modal-head">
                 <div class="modal-emoji">💘</div>
                 <h1 class="modal-title">月抛模拟器</h1>
-                <p class="modal-kicker">Panic Edition</p>
-                <p id="runtime-note" class="runtime-note">Pages 可独立运行；Worker 只保留最小边界，后续可直接接 AI。</p>
+                <p class="modal-kicker">Worker Authority Build</p>
+                <p id="runtime-note" class="runtime-note">正在检查 Edge 运行时。如果 Worker 掉线，这版不会允许开局。</p>
             </div>
 
             <div class="intro-copy">
                 <div class="info-card">
                     <p>1. <b>延迟判决</b>：高危行为后，你不会立刻知道自己是否感染。</p>
-                    <p>2. <b>心理压力</b>：无套或危险行为会积累焦虑，压力过高会让你看不清细节。</p>
-                    <p>3. <b>去医院</b>：确认自己是否安全的唯一可靠办法，但代价很高。</p>
-                    <p>4. <b>目标</b>：把压抑值降到 0，同时保持身体健康。</p>
+                    <p>2. <b>三类试探</b>：套话、追问、压边界，各自挖不同类型的证据。</p>
+                    <p>3. <b>医院最硬</b>：想确认自己有没有事，医院仍是唯一硬答案。</p>
+                    <p>4. <b>案件簿</b>：对象、话术和结局会被记录，但不加属性，不搞养成。</p>
                 </div>
 
                 <div class="modal-actions">
-                    <button id="start-game-btn" class="button button--primary" type="button">开始月抛</button>
+                    <button id="start-game-btn" class="button button--primary" type="button" disabled>连接 Edge 后开始</button>
                     <button id="open-help-btn" class="button button--secondary" type="button">📖 游戏帮助</button>
+                    <button id="open-casebook-btn" class="button button--secondary" type="button">🗂️ 打开案件簿</button>
                 </div>
             </div>
         </div>
@@ -154,8 +174,8 @@
                 <section class="help-section help-section--success">
                     <h3>🏆 胜利条件</h3>
                     <ul class="help-list">
-                        <li><b>压抑值归零</b>：通过约会行为释放全部生理压抑。</li>
-                        <li><b>且未被感染</b>：通关结算时身体必须健康；带病清零仍然算失败。</li>
+                        <li><b>压抑值归零</b>：通过行为释放全部生理压抑。</li>
+                        <li><b>且未被感染</b>：通关时身体必须健康；带病清零仍算失败。</li>
                     </ul>
                 </section>
 
@@ -164,30 +184,69 @@
                     <ul class="help-list">
                         <li><b>欲火焚身</b>：压抑值达到 100%。</li>
                         <li><b>精神崩溃</b>：心理压力达到 100%。</li>
-                        <li><b>确诊感染</b>：医院检查阳性，或某次行为直接中招。</li>
-                        <li><b>糟糕的胜利</b>：压抑值清零，但结算时发现已感染。</li>
+                        <li><b>确诊感染</b>：医院检查阳性，或最终结算时揭晓已中招。</li>
                     </ul>
                 </section>
 
                 <section class="help-section help-section--violet">
-                    <h3>🧠 核心机制：延迟判决</h3>
+                    <h3>🕵️ 三类试探</h3>
                     <div class="help-note">
-                        <p>高危行为后，游戏不会立刻告诉你结果。</p>
-                        <p>只有去医院检查，或者最终通关/失败结算时，才会揭晓感染与否。</p>
+                        <p><b>套话</b>：摸生活细节，看他是不是很会包装自己。</p>
+                        <p><b>追问</b>：问检测、问时间线，专抓说辞矛盾。</p>
+                        <p><b>压边界</b>：看他对套、口、插入和防护到底什么态度。</p>
                     </div>
                 </section>
 
                 <section class="help-section help-section--sky">
                     <h3>📊 数值系统</h3>
                     <div class="info-card">
-                        <p><b>🔥 生理压抑</b>：会随时间上涨，通过行为释放；去医院会大幅增加。</p>
-                        <p><b>🧠 心理压力</b>：高危行为会明显增加；过高时进入恐慌状态，看不清对方标签。</p>
+                        <p><b>🔥 生理压抑</b>：会随时间上涨，安全行为现在也有存在价值。</p>
+                        <p><b>🧠 心理压力</b>：上头后不会随机遮标签，但你会更难听懂重点。</p>
                     </div>
                 </section>
             </div>
 
             <div class="help-footer">
                 <button class="button button--secondary" type="button" data-close-help>知道了</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="casebook-modal" class="modal" hidden>
+        <div class="modal-panel help-panel casebook-panel">
+            <div class="help-header">
+                <h2>案件簿</h2>
+                <button class="icon-button" type="button" data-close-casebook>&times;</button>
+            </div>
+
+            <div class="help-body custom-scroll">
+                <div id="casebook-summary" class="info-card"></div>
+                <div class="casebook-sections">
+                    <section class="casebook-section">
+                        <h3>已见人格</h3>
+                        <div id="casebook-personas" class="casebook-list"></div>
+                    </section>
+                    <section class="casebook-section">
+                        <h3>已见话术</h3>
+                        <div id="casebook-lieTypes" class="casebook-list"></div>
+                    </section>
+                    <section class="casebook-section">
+                        <h3>已达成结局</h3>
+                        <div id="casebook-endings" class="casebook-list"></div>
+                    </section>
+                    <section class="casebook-section">
+                        <h3>已确认病原</h3>
+                        <div id="casebook-diseases" class="casebook-list"></div>
+                    </section>
+                    <section class="casebook-section">
+                        <h3>已得称号</h3>
+                        <div id="casebook-titles" class="casebook-list"></div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="help-footer">
+                <button class="button button--secondary" type="button" data-close-casebook>收起案件簿</button>
             </div>
         </div>
     </section>
@@ -204,6 +263,8 @@
                 <div id="disease-report" class="disease-card" hidden>
                     <p id="disease-content"></p>
                 </div>
+                <div id="critical-reason" class="info-card critical-card" hidden></div>
+                <div id="unlock-card" class="info-card unlock-card" hidden></div>
             </div>
 
             <details id="history-container" class="history-panel" hidden open>
@@ -217,6 +278,7 @@
             <div class="feedback-actions">
                 <button id="next-btn" class="button button--primary" type="button">继续</button>
                 <button id="restart-btn" class="button button--secondary" type="button" hidden>返回首页</button>
+                <button id="open-casebook-feedback-btn" class="button button--secondary" type="button" hidden>🗂️ 查看案件簿</button>
             </div>
         </div>
     </section>

@@ -380,6 +380,15 @@ body {
     font-weight: 800;
 }
 
+.partner-scene {
+    margin: 8px 0 0;
+    color: #7dd3fc;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
 .partner-quote {
     margin: 10px 0 0;
     color: rgba(253, 164, 175, 0.92);
@@ -490,6 +499,62 @@ body {
     border: 1px solid rgba(99, 102, 241, 0.34);
     color: #c7d2fe;
     font-weight: 800;
+}
+
+.chat-panel {
+    margin-bottom: 12px;
+    padding: 14px;
+    border-radius: 18px;
+    background: #111827;
+    border: 1px solid var(--line);
+}
+
+.chat-panel__hint {
+    margin-bottom: 10px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.chat-panel__grid {
+    display: grid;
+    gap: 8px;
+}
+
+.chat-option {
+    width: 100%;
+    display: grid;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: #1e293b;
+    color: #e2e8f0;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+    font: inherit;
+}
+
+.chat-option strong {
+    font-size: 0.8rem;
+    font-weight: 900;
+}
+
+.chat-option span {
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.45;
+}
+
+.chat-option:hover:not(:disabled) {
+    background: #243042;
+    border-color: var(--line-strong);
+}
+
+.chat-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .button-note {
@@ -682,6 +747,11 @@ body {
     font-weight: 900;
 }
 
+.button--primary:disabled {
+    background: #334155;
+    color: #94a3b8;
+}
+
 .button--secondary {
     min-height: 50px;
     background: #1f2937;
@@ -838,12 +908,65 @@ body {
     line-height: 1.7;
 }
 
+.feedback-line {
+    margin: 0;
+}
+
+.feedback-line + .feedback-line {
+    margin-top: 10px;
+}
+
+.feedback-line--success {
+    color: #6ee7b7;
+    font-weight: 800;
+}
+
+.feedback-line--danger {
+    color: #fecdd3;
+    font-weight: 800;
+}
+
+.feedback-line--warning {
+    color: #e9d5ff;
+    font-weight: 700;
+}
+
+.feedback-line--muted {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
 .disease-card {
     margin-top: 16px;
     padding: 16px;
     background: #3f1222;
     color: #fecdd3;
     font-size: 0.82rem;
+}
+
+.critical-card {
+    margin-top: 16px;
+    background: #182132;
+    color: #e2e8f0;
+    font-size: 0.78rem;
+}
+
+.unlock-card {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    background: #0f172a;
+}
+
+.unlock-card__title {
+    width: 100%;
+    color: #fcd34d;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 
 .feedback-copy {
@@ -945,6 +1068,15 @@ body {
     padding-top: 2px;
 }
 
+.history-scene {
+    margin-bottom: 8px;
+    color: #7dd3fc;
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
 .history-tags {
     display: flex;
     flex-wrap: wrap;
@@ -965,6 +1097,10 @@ body {
 .history-subline {
     margin-top: 8px;
     font-size: 0.72rem;
+}
+
+.history-subline--reason {
+    color: var(--muted);
 }
 
 .history-disease {
@@ -1095,6 +1231,50 @@ body {
     color: var(--muted);
     font-size: 0.78rem;
     font-style: italic;
+}
+
+.casebook-panel .info-card p + p {
+    margin-top: 8px;
+}
+
+.casebook-sections {
+    margin-top: 20px;
+}
+
+.casebook-section + .casebook-section {
+    margin-top: 18px;
+}
+
+.casebook-section h3 {
+    margin: 0 0 10px;
+    color: #f8fafc;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.casebook-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.casebook-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #1e293b;
+    border: 1px solid var(--line);
+    color: #cbd5e1;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.casebook-empty {
+    color: var(--muted);
+    font-size: 0.74rem;
 }
 
 .custom-scroll,
@@ -1290,6 +1470,11 @@ body {
         font-size: 0.88rem;
     }
 
+    .partner-scene {
+        margin-top: 4px;
+        font-size: 0.58rem;
+    }
+
     .partner-quote {
         margin-top: 4px;
         font-size: 0.64rem;
@@ -1313,6 +1498,28 @@ body {
         min-height: 40px;
         margin-bottom: 8px;
         font-size: 0.7rem;
+    }
+
+    .chat-panel {
+        margin-bottom: 8px;
+        padding: 10px;
+    }
+
+    .chat-panel__hint {
+        margin-bottom: 8px;
+        font-size: 0.62rem;
+    }
+
+    .chat-option {
+        padding: 10px;
+    }
+
+    .chat-option strong {
+        font-size: 0.72rem;
+    }
+
+    .chat-option span {
+        font-size: 0.58rem;
     }
 
     .button-note {
@@ -1357,6 +1564,10 @@ body {
 
     .history-outcome {
         align-self: flex-start;
+    }
+
+    .casebook-chip {
+        font-size: 0.66rem;
     }
 }
 
