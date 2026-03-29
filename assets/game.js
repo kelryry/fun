@@ -1,10 +1,25 @@
 (async () => {
-    const data = window.GAME_DATA;
+    const DEFAULT_DATA = {
+        STORAGE_KEYS: {
+            tutorialStage: "month-pass-tutorial-stage-v2",
+            casebook: "month-pass-casebook-v2"
+        },
+        COPY_URL: "/content/game-copy.json",
+        CASEBOOK_SECTION_IDS: ["personas", "lieTypes", "endings", "diseases", "titles"]
+    };
 
-    if (!data) {
-        console.error("GAME_DATA is missing.");
-        return;
-    }
+    const runtimeData = window.GAME_DATA || {};
+    const data = {
+        ...DEFAULT_DATA,
+        ...runtimeData,
+        STORAGE_KEYS: {
+            ...DEFAULT_DATA.STORAGE_KEYS,
+            ...(runtimeData.STORAGE_KEYS || {})
+        },
+        CASEBOOK_SECTION_IDS: Array.isArray(runtimeData.CASEBOOK_SECTION_IDS) && runtimeData.CASEBOOK_SECTION_IDS.length > 0
+            ? runtimeData.CASEBOOK_SECTION_IDS
+            : DEFAULT_DATA.CASEBOOK_SECTION_IDS
+    };
 
     const state = {
         copy: null,
