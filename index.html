@@ -69,30 +69,13 @@
                 </section>
 
                 <aside class="action-dock">
-                    <div class="tool-row">
-                        <button id="use-testkit-btn" class="tool-button" type="button">
-                            <span id="testkit-label" class="tool-button__label"></span>
-                            <strong id="item-testkit" class="tool-button__value">x1</strong>
+                    <div class="tool-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <button id="btn-chat" class="button button--chat" type="button" style="min-height: 48px; padding: 8px;">
+                            <span id="chat-button-label" class="button-label" style="text-align: center;">试探</span>
                         </button>
-
-                        <button id="go-hospital-btn" class="tool-button" type="button">
-                            <span id="hospital-label" class="tool-button__label"></span>
-                            <small id="hospital-note" class="tool-button__note"></small>
+                        <button id="go-hospital-btn" class="button button--secondary" type="button" style="min-height: 48px; padding: 8px;">
+                            <span id="hospital-label" class="button-label" style="text-align: center;">医院</span>
                         </button>
-                    </div>
-
-                    <button id="btn-chat" class="button button--chat" type="button">
-                        <span id="chat-button-label" class="button-label"></span>
-                        <span id="chat-button-note" class="button-note"></span>
-                    </button>
-
-                    <div id="chat-panel" class="chat-panel" hidden>
-                        <p id="chat-panel-hint" class="chat-panel__hint"></p>
-                        <div class="chat-panel__grid">
-                            <button id="chat-smalltalk-btn" class="chat-option" type="button" data-question-type="smalltalk"></button>
-                            <button id="chat-probe-btn" class="chat-option" type="button" data-question-type="probe"></button>
-                            <button id="chat-boundary-btn" class="chat-option" type="button" data-question-type="boundary"></button>
-                        </div>
                     </div>
 
                     <div class="action-grid">
@@ -114,9 +97,8 @@
                         </button>
                     </div>
 
-                    <button id="btn-refuse" class="button button--ghost" type="button" data-action="refuse">
-                        <span id="action-refuse-title" class="button-label"></span>
-                        <span id="action-refuse-note" class="button-note"></span>
+                    <button id="btn-refuse" class="button button--ghost" type="button" data-action="refuse" style="min-height: 42px;">
+                        <span id="action-refuse-title" class="button-label" style="text-align: center;"></span>
                     </button>
                 </aside>
             </section>
@@ -239,6 +221,22 @@
             </div>
             <div class="modal-scroll custom-scroll">
                 <div id="history-list" class="history-list"></div>
+            </div>
+        </div>
+    </section>
+    <section id="chat-modal" class="modal" hidden>
+        <div class="modal-panel info-panel">
+            <div class="modal-bar">
+                <h2 class="modal-section-title">你要怎么问？</h2>
+                <button class="icon-button" type="button" data-close-chat>&times;</button>
+            </div>
+            <div id="chat-panel" class="chat-panel">
+                <p id="chat-panel-hint" class="chat-panel__hint"></p>
+                <div class="chat-panel__grid" style="grid-template-columns: 1fr; gap: 12px;">
+                    <button id="chat-smalltalk-btn" class="chat-option" type="button" data-question-type="smalltalk"></button>
+                    <button id="chat-probe-btn" class="chat-option" type="button" data-question-type="probe"></button>
+                    <button id="chat-boundary-btn" class="chat-option" type="button" data-question-type="boundary"></button>
+                </div>
             </div>
         </div>
     </section>

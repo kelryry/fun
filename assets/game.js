@@ -51,10 +51,9 @@
         panicWarning: document.getElementById("panic-warning"),
         turnLabel: document.getElementById("turn-label"),
         turnCount: document.getElementById("turn-count"),
-        testkitLabel: document.getElementById("testkit-label"),
-        testkitCount: document.getElementById("item-testkit"),
+        
         hospitalLabel: document.getElementById("hospital-label"),
-        hospitalNote: document.getElementById("hospital-note"),
+        
         modeChip: document.getElementById("mode-chip"),
         avatarEmoji: document.getElementById("avatar-emoji"),
         partnerStatus: document.getElementById("partner-status"),
@@ -64,8 +63,10 @@
         tagsContainer: document.getElementById("tags-container"),
         chatButton: document.getElementById("btn-chat"),
         chatButtonLabel: document.getElementById("chat-button-label"),
-        chatButtonNote: document.getElementById("chat-button-note"),
+        
         chatPanel: document.getElementById("chat-panel"),
+        chatModal: document.getElementById("chat-modal"),
+        closeChatButtons: document.querySelectorAll("[data-close-chat]"),
         chatPanelHint: document.getElementById("chat-panel-hint"),
         chatOptionButtons: Array.from(document.querySelectorAll("[data-question-type]")),
         feedbackIcon: document.getElementById("feedback-icon"),
@@ -106,7 +107,7 @@
             ])
         ),
         hospitalButton: document.getElementById("go-hospital-btn"),
-        testkitButton: document.getElementById("use-testkit-btn"),
+        
         actionButtons: Array.from(document.querySelectorAll("[data-action]")),
         actionTextNodes: {
             oral_condom: {
@@ -260,9 +261,9 @@
         setText(dom.anxietyLabel, copy.shell.battle.anxiety);
         setText(dom.panicWarning, copy.shell.battle.panic);
         setText(dom.clueTitle, copy.shell.battle.cluesTitle);
-        setText(dom.testkitLabel, copy.shell.battle.testkit);
+        
         setText(dom.hospitalLabel, copy.shell.battle.hospital);
-        setText(dom.hospitalNote, copy.shell.battle.hospitalNote);
+        // hospitalNote has been removed
         setText(dom.chatPanelHint, copy.shell.battle.chatPanelHint);
         setText(dom.historyTitle, copy.shell.feedback.historyTitle);
         setText(dom.historyToggleMeta, copy.shell.feedback.historyToggle);
@@ -392,7 +393,6 @@
         state.busy = isBusy;
         const gameOver = Boolean(state.uiState?.gameOver);
         dom.chatButton.disabled = isBusy || !state.uiState?.partner?.chat?.available || gameOver;
-        dom.testkitButton.disabled = isBusy || !state.uiState || gameOver;
         dom.hospitalButton.disabled = isBusy || !state.uiState || gameOver;
         dom.chatOptionButtons.forEach((button) => {
             button.disabled = isBusy || button.disabled;
@@ -442,14 +442,14 @@
                 return;
             }
 
-            setHidden(dom.chatPanel, !dom.chatPanel.hidden);
+            setHidden(dom.chatModal, false);
         });
 
         dom.chatOptionButtons.forEach((button) => {
             button.addEventListener("click", () => askQuestion(button.dataset.questionType));
         });
 
-        dom.testkitButton.addEventListener("click", () => performAction("use_testkit"));
+        
         dom.hospitalButton.addEventListener("click", () => performAction("hospital"));
 
         dom.actionButtons.forEach((button) => {
@@ -465,6 +465,12 @@
         dom.reviewButton.addEventListener("click", () => {
             setHidden(dom.feedbackOverlay, true);
             setHidden(dom.historyModal, false);
+        });
+
+        dom.closeChatButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setHidden(dom.chatModal, true);
+            });
         });
 
         dom.closeHistoryButtons.forEach((button) => {
@@ -784,7 +790,7 @@
         });
 
         if (!chatState.available) {
-            setHidden(dom.chatPanel, true);
+            setHidden(dom.chatModal, true);
         }
     }
 
@@ -827,8 +833,7 @@
         setWidth(dom.anxietyBar, `${uiState.stats.anxiety}%`);
         setText(dom.anxietyValue, `${uiState.stats.anxiety}%`);
         setText(dom.turnCount, String(uiState.stats.turn).padStart(2, "0"));
-        setText(dom.testkitCount, `x${uiState.stats.testkit}`);
-        dom.testkitCount.classList.toggle("is-empty", uiState.stats.testkit === 0);
+        
         setHidden(dom.panicWarning, !uiState.stats.panicMode);
         dom.gameContent.classList.toggle("panic-mode", uiState.stats.panicMode);
 
@@ -845,7 +850,7 @@
         syncChatOptions(partner.chat);
         syncActionLocks(partner.actionLocks);
 
-        dom.testkitButton.disabled = state.busy || uiState.stats.testkit <= 0 || uiState.gameOver;
+        
         dom.hospitalButton.disabled = state.busy || uiState.gameOver;
     }
 
@@ -856,7 +861,7 @@
 
         syncChatOptions(state.uiState.partner.chat);
         syncActionLocks(state.uiState.partner.actionLocks);
-        dom.testkitButton.disabled = state.busy || state.uiState.stats.testkit <= 0 || state.uiState.gameOver;
+        
         dom.hospitalButton.disabled = state.busy || state.uiState.gameOver;
     }
 
@@ -897,7 +902,7 @@
             setHidden(dom.gameContainer, false);
             setHidden(dom.helpModal, true);
             setHidden(dom.casebookModal, true);
-            setHidden(dom.chatPanel, true);
+            setHidden(dom.chatModal, true);
 
             if (payload.introEvent) {
                 showEvent(payload.introEvent, payload.uiState, addedUnlocks);
@@ -919,7 +924,7 @@
 
             state.sessionToken = payload.sessionToken;
             renderUiState(payload.uiState);
-            setHidden(dom.chatPanel, true);
+            setHidden(dom.chatModal, true);
             showEvent(payload.event, payload.uiState, addedUnlocks);
         });
     }
@@ -938,7 +943,7 @@
 
             state.sessionToken = payload.sessionToken;
             renderUiState(payload.uiState);
-            setHidden(dom.chatPanel, true);
+            setHidden(dom.chatModal, true);
             showEvent(payload.event, payload.uiState, addedUnlocks);
         });
     }
@@ -950,7 +955,7 @@
         setHidden(dom.helpModal, true);
         setHidden(dom.casebookModal, true);
         setHidden(dom.gameContainer, true);
-        setHidden(dom.chatPanel, true);
+        setHidden(dom.chatModal, true);
         setHidden(dom.introModal, false);
         renderCasebook();
         updateModeChip(state.currentMode);

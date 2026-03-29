@@ -1475,11 +1475,7 @@ function applyChat(run, questionType) {
         { tone: clue.tone, text: clue.text }
     ];
 
-    if (blueprint.clue.contradiction && !panicMode) {
-        lines.push({ tone: "warning", text: COMMON_COPY.chatFeedback.contradiction });
-    } else if (panicMode) {
-        lines.push({ tone: "muted", text: COMMON_COPY.chatFeedback.panic });
-    }
+    // AI insight takes over lines via prepareEventForClient
 
     return {
         event: createEvent({
@@ -2027,13 +2023,12 @@ async function polishChatEvent(event, run, env) {
         makePolishSeed(run, 17)
     );
 
-    if (typeof response?.text === "string" && response.text.trim()) {
-        event.lines[0].text = response.text.trim();
-    }
+    // event.lines[0] was the chat text, we'll replace it entirely below
     if (typeof response?.insight === "string" && response.insight.trim()) {
         const insight = response.insight.trim();
         event.aiInsight = insight;
-        event.lines.push({ tone: "warning", text: "💭 " + insight });
+        // 覆盖原始回复，只显示 AI 提供的解析
+        event.lines = [{ tone: "warning", text: "💭 " + insight }];
         if (run.currentPartner && frame.topic) {
             run.currentPartner.discoveredQuestionClues[frame.topic].text = insight;
         }
