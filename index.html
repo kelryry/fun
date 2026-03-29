@@ -3,223 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#020617">
+    <meta name="theme-color" content="#0f172a">
     <title>月抛模拟器</title>
     <link rel="stylesheet" href="/assets/game.css">
 </head>
 <body data-api-base="/api">
     <div class="app-shell">
-        <main id="game-container" class="game-panel" hidden>
-            <header class="panel-header">
-                <div class="panel-brand">
-                    <span class="brand-eyebrow">Panic Edition</span>
-                    <h1 class="brand-gradient">月抛模拟器</h1>
+        <main class="app-layout">
+            <header class="card app-header">
+                <div class="app-title">
+                    <p class="app-eyebrow">Low Power Edition</p>
+                    <h1>月抛模拟器</h1>
+                    <p class="app-subtitle">保留核心策略玩法，移除持续高功耗视觉层。</p>
                 </div>
-                <div class="panel-meta">
-                    <div class="turn-chip">
-                        <span class="turn-chip__label">回合</span>
-                        <strong id="turn-count" class="turn-chip__value">01</strong>
+                <div class="app-meta">
+                    <div class="meta-card">
+                        <span class="meta-card__label">回合</span>
+                        <strong id="turn-count" class="meta-card__value">01</strong>
                     </div>
                     <div id="build-chip" class="build-chip">静态模式</div>
                 </div>
             </header>
 
-            <section class="stats-panel">
-                <div class="meter-block">
-                    <div class="meter-head">
-                        <span class="meter-label meter-label--urge">🔥 生理压抑 (Urge)</span>
-                        <span id="frustration-val">50%</span>
-                    </div>
-                    <div class="meter-track">
-                        <div id="frustration-bar" class="meter-fill meter-fill--urge"></div>
+            <section id="intro-section" class="card intro-panel">
+                <div class="intro-panel__copy">
+                    <p id="runtime-note" class="runtime-note">Pages 可独立运行；Worker 只保留最小边界，后续可直接接 AI。</p>
+                    <div class="info-list">
+                        <p><strong>延迟判决：</strong>高危行为后，不会立刻告诉你是否感染。</p>
+                        <p><strong>心理压力：</strong>焦虑越高，能看清的标签越少。</p>
+                        <p><strong>医院检查：</strong>唯一可靠的自检手段，但会浪费回合并抬高压抑值。</p>
+                        <p><strong>目标：</strong>把压抑值降到 0，同时保持身体健康。</p>
                     </div>
                 </div>
-
-                <div class="meter-block">
-                    <div class="meter-head">
-                        <span class="meter-label meter-label--anxiety">🧠 心理压力 (Anxiety)</span>
-                        <span id="anxiety-val">0%</span>
-                    </div>
-                    <div class="meter-track">
-                        <div id="anxiety-bar" class="meter-fill meter-fill--anxiety"></div>
-                    </div>
-                    <p id="panic-warning" class="panic-warning" hidden>⚠️ 恐慌状态：视线模糊，无法看清细节</p>
-                </div>
-
-                <div class="quick-actions">
-                    <div class="status-card">
-                        <div class="status-card__body">
-                            <div>
-                                <span class="status-label">对方试纸</span>
-                                <span id="item-testkit" class="status-value">x1</span>
-                            </div>
-                        </div>
-                        <button id="use-testkit-btn" class="status-card__action" type="button">检测对方</button>
-                    </div>
-
-                    <div class="hospital-card">
-                        <button id="go-hospital-btn" class="hospital-card__button" type="button">
-                            <span class="hospital-card__icon">🏥</span>
-                            <span class="hospital-card__copy">
-                                <strong>去医院检查</strong>
-                                <span>压抑值 +20 / 清空压力</span>
-                            </span>
-                        </button>
-                    </div>
+                <div class="intro-panel__actions">
+                    <button id="start-game-btn" class="button button--primary" type="button">开始月抛</button>
                 </div>
             </section>
 
-            <section id="game-content" class="game-body">
-                <div class="partner-card">
-                    <div class="avatar-frame">
-                        <span id="avatar-emoji" class="avatar-emoji">🌚</span>
-                        <span id="partner-status" class="partner-status" hidden>⚠️</span>
+            <details class="card help-panel">
+                <summary class="section-summary">游戏帮助</summary>
+                <div class="help-body">
+                    <section class="help-section">
+                        <h2>胜利条件</h2>
+                        <ul class="help-list">
+                            <li>压抑值归零。</li>
+                            <li>结算时未感染。</li>
+                        </ul>
+                    </section>
+
+                    <section class="help-section">
+                        <h2>失败条件</h2>
+                        <ul class="help-list">
+                            <li>压抑值达到 100%。</li>
+                            <li>心理压力达到 100%。</li>
+                            <li>医院确诊感染，或最终结算时已中招。</li>
+                        </ul>
+                    </section>
+
+                    <section class="help-section">
+                        <h2>策略工具</h2>
+                        <ul class="help-list">
+                            <li>试纸可直接检测当前对象，并揭示全部标签。</li>
+                            <li>医院会增加压抑值，但能清空焦虑并确认自己是否感染。</li>
+                            <li>高焦虑时看不清标签，先降压力通常比硬上更安全。</li>
+                        </ul>
+                    </section>
+                </div>
+            </details>
+
+            <section id="game-panel" class="game-panel" hidden>
+                <section class="card status-panel">
+                    <div class="status-panel__grid">
+                        <div class="meter-block">
+                            <div class="meter-head">
+                                <span class="meter-label meter-label--urge">生理压抑</span>
+                                <span id="frustration-val">50%</span>
+                            </div>
+                            <div class="meter-track">
+                                <div id="frustration-bar" class="meter-fill meter-fill--urge"></div>
+                            </div>
+                        </div>
+
+                        <div class="meter-block">
+                            <div class="meter-head">
+                                <span class="meter-label meter-label--anxiety">心理压力</span>
+                                <span id="anxiety-val">0%</span>
+                            </div>
+                            <div class="meter-track">
+                                <div id="anxiety-bar" class="meter-fill meter-fill--anxiety"></div>
+                            </div>
+                        </div>
                     </div>
-                    <h2 class="partner-title">潜在伴侣</h2>
-                    <p id="flirt-text" class="partner-quote">"..."</p>
+
+                    <p id="panic-warning" class="panic-warning" hidden>恐慌状态：你现在只能看清部分标签，最好先去医院或换人。</p>
+
+                    <div class="tool-grid">
+                        <div class="tool-card">
+                            <span class="tool-card__label">对方试纸</span>
+                            <strong id="item-testkit" class="tool-card__value">x1</strong>
+                            <button id="use-testkit-btn" class="button button--secondary button--inline" type="button">检测对方</button>
+                        </div>
+
+                        <div class="tool-card">
+                            <span class="tool-card__label">医院检查</span>
+                            <p class="tool-card__copy">压抑值 +10，心理压力清零。</p>
+                            <button id="go-hospital-btn" class="button button--secondary button--inline" type="button">去医院</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="play-panel" class="card play-panel">
+                    <div class="partner-row">
+                        <div class="avatar-badge">
+                            <span id="avatar-emoji" class="avatar-emoji">🌚</span>
+                            <span id="partner-status" class="partner-status" hidden>⚠️</span>
+                        </div>
+                        <div class="partner-copy">
+                            <p class="section-label">当前对象</p>
+                            <h2 class="partner-title">潜在伴侣</h2>
+                            <p id="flirt-text" class="partner-quote">"..."</p>
+                        </div>
+                    </div>
+
+                    <div id="tags-container" class="tags-grid" aria-live="polite"></div>
+
+                    <div class="action-stack">
+                        <button id="btn-chat" class="button button--secondary button--wide" type="button" data-action="chat">
+                            <span>💬 试探 / 聊天</span>
+                            <span class="button-note">压抑值 +3</span>
+                        </button>
+
+                        <div class="action-grid">
+                            <button id="btn-oral-condom" class="button action-button action-button--mild" type="button" data-action="oral_condom">
+                                <span>🍬 戴套口交</span>
+                                <small>收益极低 | 压力 +2</small>
+                            </button>
+                            <button id="btn-sex-condom" class="button action-button action-button--safe" type="button" data-action="sex_condom">
+                                <span>🛡️ 戴套性交</span>
+                                <small>收益一般 | 压力 +5</small>
+                            </button>
+                            <button id="btn-oral-raw" class="button action-button action-button--risk" type="button" data-action="oral_raw">
+                                <span>🍭 无套口交</span>
+                                <small>收益中等 | 压力 +15</small>
+                            </button>
+                            <button id="btn-sex-raw" class="button action-button action-button--danger" type="button" data-action="sex_raw">
+                                <span>🔥 无套性交</span>
+                                <small>收益较高 | 压力 +30</small>
+                            </button>
+                        </div>
+
+                        <button id="btn-refuse" class="button button--ghost" type="button" data-action="refuse">👋 换一个 (压抑值 +8)</button>
+                    </div>
+                </section>
+            </section>
+
+            <section id="result-panel" class="card result-panel" hidden>
+                <div class="result-head">
+                    <div id="feedback-icon" class="result-icon">ℹ️</div>
+                    <div>
+                        <p class="section-label">结果反馈</p>
+                        <h2 id="feedback-title" class="result-title"></h2>
+                    </div>
                 </div>
 
-                <div id="tags-container" class="tags-grid" aria-live="polite"></div>
+                <div id="feedback-message" class="result-message"></div>
 
-                <div class="action-stack">
-                    <button id="btn-chat" class="button button--chat" type="button" data-action="chat">
-                        <span>💬</span>
-                        <span>试探 / 聊天</span>
-                        <span class="button-note">压抑值+3</span>
-                    </button>
+                <div id="disease-report" class="disease-card" hidden>
+                    <p id="disease-content"></p>
+                </div>
 
-                    <div class="action-divider"></div>
+                <details id="history-container" class="history-panel" hidden open>
+                    <summary class="section-summary">约会记录复盘</summary>
+                    <div id="history-list" class="history-list"></div>
+                </details>
 
-                    <div class="action-grid">
-                        <button id="btn-oral-condom" class="button action-button action-button--mild" type="button" data-action="oral_condom">
-                            <span>🍬 戴套口交</span>
-                            <small>收益极低 | 压力 +2</small>
-                        </button>
-                        <button id="btn-sex-condom" class="button action-button action-button--safe" type="button" data-action="sex_condom">
-                            <span>🛡️ 戴套性交</span>
-                            <small>收益一般 | 压力 +5</small>
-                        </button>
-                        <button id="btn-oral-raw" class="button action-button action-button--risk" type="button" data-action="oral_raw">
-                            <span>🍭 无套口交</span>
-                            <small>收益中等 | 压力 +15</small>
-                        </button>
-                        <button id="btn-sex-raw" class="button action-button action-button--danger" type="button" data-action="sex_raw">
-                            <span>🔥 无套性交</span>
-                            <small>收益较高 | 压力 +30</small>
-                        </button>
-                    </div>
-
-                    <button id="btn-refuse" class="button button--ghost" type="button" data-action="refuse">
-                        <span>👋</span>
-                        <span>换一个 (压抑值 +8)</span>
-                    </button>
+                <div class="result-actions">
+                    <button id="next-btn" class="button button--primary" type="button">继续</button>
+                    <button id="restart-btn" class="button button--ghost" type="button" hidden>返回首页</button>
                 </div>
             </section>
         </main>
     </div>
-
-    <section id="intro-modal" class="modal">
-        <div class="modal-panel modal-panel--tall">
-            <div class="modal-head">
-                <div class="modal-emoji">💘</div>
-                <h1 class="modal-title">月抛模拟器</h1>
-                <p class="modal-kicker">Panic Edition</p>
-                <p id="runtime-note" class="runtime-note">Pages 可独立运行；Worker 只保留最小边界，后续可直接接 AI。</p>
-            </div>
-
-            <div class="intro-copy">
-                <div class="info-card">
-                    <p>1. <b>延迟判决</b>：高危行为后，你不会立刻知道自己是否感染。</p>
-                    <p>2. <b>心理压力</b>：无套或危险行为会积累焦虑，压力过高会让你看不清细节。</p>
-                    <p>3. <b>去医院</b>：确认自己是否安全的唯一可靠办法，但代价很高。</p>
-                    <p>4. <b>目标</b>：把压抑值降到 0，同时保持身体健康。</p>
-                </div>
-
-                <div class="modal-actions">
-                    <button id="start-game-btn" class="button button--primary" type="button">开始月抛</button>
-                    <button id="open-help-btn" class="button button--secondary" type="button">📖 游戏帮助</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="help-modal" class="modal" hidden>
-        <div class="modal-panel help-panel">
-            <div class="help-header">
-                <h2>游戏指南手册</h2>
-                <button class="icon-button" type="button" data-close-help>&times;</button>
-            </div>
-
-            <div class="help-body custom-scroll">
-                <section class="help-section help-section--success">
-                    <h3>🏆 胜利条件</h3>
-                    <ul class="help-list">
-                        <li><b>压抑值归零</b>：通过约会行为释放全部生理压抑。</li>
-                        <li><b>且未被感染</b>：通关结算时身体必须健康；带病清零仍然算失败。</li>
-                    </ul>
-                </section>
-
-                <section class="help-section help-section--danger">
-                    <h3>💀 失败条件</h3>
-                    <ul class="help-list">
-                        <li><b>欲火焚身</b>：压抑值达到 100%。</li>
-                        <li><b>精神崩溃</b>：心理压力达到 100%。</li>
-                        <li><b>确诊感染</b>：医院检查阳性，或某次行为直接中招。</li>
-                        <li><b>糟糕的胜利</b>：压抑值清零，但结算时发现已感染。</li>
-                    </ul>
-                </section>
-
-                <section class="help-section help-section--violet">
-                    <h3>🧠 核心机制：延迟判决</h3>
-                    <div class="help-note">
-                        <p>高危行为后，游戏不会立刻告诉你结果。</p>
-                        <p>只有去医院检查，或者最终通关/失败结算时，才会揭晓感染与否。</p>
-                    </div>
-                </section>
-
-                <section class="help-section help-section--sky">
-                    <h3>📊 数值系统</h3>
-                    <div class="info-card">
-                        <p><b>🔥 生理压抑</b>：会随时间上涨，通过行为释放；去医院会大幅增加。</p>
-                        <p><b>🧠 心理压力</b>：高危行为会明显增加；过高时进入恐慌状态，看不清对方标签。</p>
-                    </div>
-                </section>
-            </div>
-
-            <div class="help-footer">
-                <button class="button button--secondary" type="button" data-close-help>知道了</button>
-            </div>
-        </div>
-    </section>
-
-    <section id="feedback-overlay" class="modal" hidden>
-        <div class="modal-panel feedback-panel">
-            <div class="feedback-head">
-                <div id="feedback-icon" class="feedback-icon"></div>
-                <h2 id="feedback-title" class="feedback-title"></h2>
-            </div>
-
-            <div class="feedback-copy">
-                <div id="feedback-message" class="feedback-card"></div>
-                <div id="disease-report" class="disease-card" hidden>
-                    <p id="disease-content"></p>
-                </div>
-            </div>
-
-            <details id="history-container" class="history-panel" hidden open>
-                <summary class="history-toggle">
-                    <span class="history-title">约会记录复盘</span>
-                    <span class="history-toggle__meta">点击展开 / 收起</span>
-                </summary>
-                <div id="history-list" class="history-list custom-scroll"></div>
-            </details>
-
-            <div class="feedback-actions">
-                <button id="next-btn" class="button button--primary" type="button">继续</button>
-                <button id="restart-btn" class="button button--secondary" type="button" hidden>返回首页</button>
-            </div>
-        </div>
-    </section>
 
     <script defer src="/assets/game-data.js"></script>
     <script defer src="/assets/game.js"></script>
