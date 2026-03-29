@@ -50,7 +50,7 @@
         {
           "title": "目标",
           "lines": [
-            "压抑清零前，别把自己玩进医院。"
+            "在欲火烧穿理智前，别把自己玩进医院。"
           ]
         },
         {
@@ -136,7 +136,7 @@
       "chatExhausted": "聊不动了",
       "chatAsked": "问过了",
       "chatSpent": "他懒得答了",
-      "chatPanelHint": "挑一个角度问。",
+      "chatPanelHint": "挑个角度，掀他的底。",
       "locked": "对方拒绝",
       "modeLabel": {
         "male": "男生视角",
@@ -162,22 +162,22 @@
     "actions": {
       "oral_condom": {
         "title": "戴套口",
-        "note": "稳"
+        "note": "稳妥"
       },
       "sex_condom": {
         "title": "戴套做",
-        "note": "主力"
+        "note": "基本盘"
       },
       "oral_raw": {
         "title": "无套口",
-        "note": "冒险"
+        "note": "擦边"
       },
       "sex_raw": {
         "title": "无套做",
         "note": "硬赌"
       },
       "refuse": {
-        "title": "换一个",
+        "title": "走人",
         "note": "+8"
       }
     }
@@ -269,8 +269,8 @@
         "boundary": "你只记住：他底线不干净。"
       },
       "chatFeedback": {
-        "contradiction": "这句有矛盾。",
-        "panic": "你没抓住细节。"
+        "contradiction": "这句有破绽。",
+        "panic": "脑子乱了，没抓住细节。"
       },
       "historyOutcomes": {
         "leave": "正确离开",
@@ -283,7 +283,7 @@
         "visible": {
           "high": [
             {
-              "text": "他对风险这件事轻得有点反常。",
+              "text": "他对风险这事儿，看轻得反常。",
               "tone": "warning"
             },
             {
@@ -301,7 +301,7 @@
               "tone": "safe"
             },
             {
-              "text": "他对清洁和套都比你更上心。",
+              "text": "他对清洁和套比你还上心。",
               "tone": "safe"
             },
             {
@@ -311,31 +311,31 @@
           ],
           "uncertain": [
             {
-              "text": "第一眼挑不出大问题。",
+              "text": "第一眼挑不出大毛病。",
               "tone": "caution"
             },
             {
-              "text": "他的安全感有点像做出来的。",
+              "text": "他的安全感，有点像装出来的。",
               "tone": "warning"
             },
             {
-              "text": "他看起来像很会说漂亮话的人。",
+              "text": "他看起来很会说漂亮话。",
               "tone": "caution"
             }
           ]
         },
         "probe": {
-          "honest": "他能直接说出：{detail}",
-          "hardDeny": "你一追检测时间，他就开始炸毛，只剩情绪没有信息。",
-          "halfTruth": "他说“应该没事”，但越问越像：{detail}",
-          "highRisk": "一聊到检测，他就露出破绽：{detail}",
-          "unknown": "他给了你一个模糊答案，更像：{detail}"
+          "honest": "他直接交底：{detail}",
+          "hardDeny": "一追检测时间就炸毛，全是情绪，没有干货。",
+          "halfTruth": "嘴上说“没事”，越问越像：{detail}",
+          "highRisk": "一聊检测就露破绽：{detail}",
+          "unknown": "给的答案很水，更像：{detail}"
         },
         "boundary": {
-          "safe": "一聊到底线，他先把“戴套”放在最前面。",
-          "pressure": "你一压边界，他立刻把话往“别扫兴”“赌一把”上拐。",
-          "constraint": "他的底线很具体，不像在装。",
-          "mixed": "他嘴上说都行，但一提防护细节眼神就飘。"
+          "safe": "一聊到底线，他先把“戴套”顶在前面。",
+          "pressure": "一压边界，他就拐去“别扫兴”“赌一把”。",
+          "constraint": "底线很具体，不像演的。",
+          "mixed": "嘴上说都行，一提防护细节眼神就飘。"
         }
       },
       "replyTemplates": {
@@ -414,89 +414,89 @@
       "events": {
         "introTitle": "先别急着脱",
         "testkit": {
-          "positiveTitle": "试纸阳性",
+          "positiveTitle": "试纸见红",
           "positiveLines": [
             "试纸亮了。",
-            "至少能看出这些风险：{diseases}。",
-            "这是线索，不是全部。"
+            "藏不住的风险：{diseases}。",
+            "这只是冰山一角。"
           ],
           "uncertainTitle": "试纸不干脆",
           "uncertainLines": [
-            "这一下没给你准话。",
-            "像是窗口期，也像是他嘴不干净。"
+            "没给你准话。",
+            "像窗口期，也像他隐瞒了什么。"
           ],
-          "negativeTitle": "试纸没炸",
+          "negativeTitle": "没爆雷",
           "negativeLines": [
-            "这次没报常见风险。",
-            "阴性不是免死金牌。"
+            "试纸暂时干净。",
+            "但阴性不是免死金牌。"
           ],
-          "previewPrefix": "顺手又瞥见："
+          "previewPrefix": "顺手瞥见："
         },
         "hospital": {
           "title": "虚惊一场",
           "lines": [
-            "这次医院没查出问题。",
-            "压力清零了，时间和压抑也一起被吃走一截。"
+            "医院说你没事。",
+            "压力清空，但精力和兴致也被抽走一截。"
           ]
         },
         "refuse": {
-          "title": "继续找",
-          "leaveHighRisk": "你走对了。",
-          "leaveSafe": "你错过了一个不算脏的。"
+          "title": "换人",
+          "leaveHighRisk": "走得好，避开一个雷。",
+          "leaveSafe": "你错过了一个本可以睡的。"
         },
         "sexAction": {
           "title": "这一下",
-          "release": "压抑 -{reward}，本回合净变化 {delta}。",
-          "anxiety": "压力 +{delta}",
-          "infected": "你还不知道，但这一下已经记到账上了。",
-          "escaped": "他本来就带风险，这次没轮到你倒霉。",
-          "clean": "这次没踩雷。"
+          "release": "欲火褪去几分。压抑 -{reward}，净变 {delta}。",
+          "anxiety": "理智在拉扯。压力 +{delta}。",
+          "infected": "你浑然不觉，但这笔烂账已记下。",
+          "escaped": "他在玩火，你侥幸没被烧到。",
+          "clean": "安全着陆。"
         }
       },
       "endingEvents": {
         "survive": {
-          "title": "幸存",
+          "title": "全身而退",
           "lines": [
-            "你全身而退。",
-            "这次没被气氛骗上床。"
+            "你活下来了。",
+            "今晚没被气氛骗上床。"
           ]
         },
         "bad_win": {
           "title": "糟糕的胜利",
           "lines": [
-            "当晚是爽到了，后账还是追上来了。",
-            "你赢了那一下，输给了后劲。"
+            "当时爽了，后账还是找来了。",
+            "赢了那一秒，输给了后劲。"
           ]
         },
         "burnout": {
           "title": "欲火焚身",
           "lines": [
-            "那团火把你脑子烧穿了。",
-            "后面你看谁都像灭火器。"
+            "欲火烧穿了脑子。",
+            "现在看谁都像解药。"
           ]
         },
         "breakdown": {
           "title": "精神崩溃",
           "lines": [
-            "你先乱了。",
-            "一乱，谁在骗你都分不清了。"
+            "你先崩溃了。",
+            "一乱，连谁在说谎都分不清。"
           ]
         },
         "confirmed_infection": {
           "title": "确诊感染",
           "lines": [
-            "医院把侥幸按死了。",
-            "该来的还是来了。"
+            "医院按死了最后一点侥幸。",
+            "该来的躲不掉。"
           ]
         }
       },
       "criticalReasons": {
-        "surviveLeave": "你能活，不是因为不色，是因为该走真走。",
-        "surviveStay": "你能活，不是因为运气，是因为没把能睡当安全。",
-        "bad_win": "你输在把没翻车当没风险。",
-        "burnout": "你输给了那团火。",
-        "breakdown": "你先乱了。",
-        "confirmed_infection": "那点侥幸还是被医院按死了。"
+        "surviveLeave": "你能活，不是因为禁欲，是因为该走真走。",
+        "surviveStay": "你能活，不是因为运气，是没把“能睡”当“安全”。",
+        "bad_win": "你输在把“没翻车”当“没风险”。",
+        "burnout": "你输给了下半身。",
+        "breakdown": "理智先断线了。",
+        "confirmed_infection": "侥幸心理被现实狠狠扇了耳光。"
       }
     },
     "modes": {
