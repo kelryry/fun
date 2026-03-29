@@ -5,8 +5,11 @@ const JSON_HEADERS = {
     "access-control-allow-headers": "content-type"
 };
 
-const SESSION_VERSION = 2;
-const MODE_ID = "male";
+const SESSION_VERSION = 3;
+const DEFAULT_MODE_ID = "male";
+const SUPPORTED_MODES = ["male", "female"];
+const AI_MODEL = "@cf/zai-org/glm-4.7-flash";
+const AI_TIMEOUT_MS = 1800;
 const MAX_CHAT_PER_PARTNER = 2;
 const CHAT_ORDER = ["smalltalk", "probe", "boundary"];
 const CHAT_DEFS = {
@@ -397,6 +400,144 @@ const SCENES = [
     }
 ];
 
+const FEMALE_SCENES = [
+    {
+        id: "home",
+        label: "他家客厅",
+        riskBias: 4,
+        openerPool: [
+            "他把门一关就凑近了，像屋里只剩你和他这点呼吸声。",
+            "客厅收得挺干净，但他看你的眼神比屋子更有侵略性。",
+            "他把外卖盒往旁边一推，像下一步就准备把你往沙发里按。"
+        ],
+        visibleRisk: [
+            { text: "茶几上放着没丢的拆封套盒，像今晚不是第一局", tone: "warning" },
+            { text: "洗手台上摆着拆过的阻断药说明书", tone: "risk" }
+        ],
+        visibleSafe: [
+            { text: "他先问你要不要洗澡、漱口，再继续聊", tone: "safe" },
+            { text: "他把套和湿巾直接放到你看得见的地方", tone: "safe" }
+        ],
+        smalltalkRisk: [
+            { text: "他说“你别多想”，可屋里像刚送走过别人。", tone: "risk" },
+            { text: "他对上一个来过这里的人解释得太快，像早排练过。", tone: "warning" }
+        ],
+        smalltalkSafe: [
+            { text: "他说自己平时不太带人回家，今晚更像一时上头。", tone: "safe" },
+            { text: "他提到第二天一早还要上班，不像打算狠狠干一整夜。", tone: "safe" }
+        ]
+    },
+    {
+        id: "hotel",
+        label: "酒店房间",
+        riskBias: 10,
+        openerPool: [
+            "房门一关，他就顺手把链条也扣上了，熟练得有点吓人。",
+            "酒店床单很白，他的眼神却一点都不干净。",
+            "他把房卡往桌上一甩，像这一套流程已经跑熟了。"
+        ],
+        visibleRisk: [
+            { text: "床头那包套已经拆了一个，像你不是今晚唯一被约来的人", tone: "risk" },
+            { text: "浴室里丢着两副一次性拖鞋", tone: "warning" }
+        ],
+        visibleSafe: [
+            { text: "他先问你底线，再问你想不想继续", tone: "safe" },
+            { text: "他嫌酒店脏，先让你看了一眼全新的套和湿巾", tone: "safe" }
+        ],
+        smalltalkRisk: [
+            { text: "他说这家店前台都快认识他了，像拿开房当日常。", tone: "risk" },
+            { text: "他对最近约过几个人说得很滑，像只想把你哄上床。", tone: "warning" }
+        ],
+        smalltalkSafe: [
+            { text: "他说是临时起意开房，话里那点慌张不像假的。", tone: "safe" },
+            { text: "他承认自己也有点紧张，怕你觉得他太急。", tone: "safe" }
+        ]
+    },
+    {
+        id: "club",
+        label: "酒吧散场后",
+        riskBias: 14,
+        openerPool: [
+            "他身上还带着酒气，话却已经往床上拐了。",
+            "酒吧门口的灯打在他脸上，他看你的眼神像只剩下最直白的欲望。",
+            "音乐刚停，他贴过来说话，像生怕你清醒下来。"
+        ],
+        visibleRisk: [
+            { text: "他手腕上还挂着别人的手绳，像刚和人贴完没多久", tone: "risk" },
+            { text: "他话里一直催你快点，像怕你想明白后反悔", tone: "warning" }
+        ],
+        visibleSafe: [
+            { text: "他先问你清不清醒，再问你要不要继续", tone: "safe" },
+            { text: "他坚持先去买水和套，说别拿身体赌酒劲", tone: "safe" }
+        ],
+        smalltalkRisk: [
+            { text: "他说今晚“就玩玩”，语气却像已经换过好几轮。", tone: "risk" },
+            { text: "他连上一个贴过的人叫什么都记不清。", tone: "warning" }
+        ],
+        smalltalkSafe: [
+            { text: "他说原本准备回家，是你让他临时改主意。", tone: "safe" },
+            { text: "他抱怨朋友把他一个人丢下，像并不常这么疯。", tone: "safe" }
+        ]
+    },
+    {
+        id: "street",
+        label: "深夜街边",
+        riskBias: 6,
+        openerPool: [
+            "夜风很冷，他却只想把你往更偏的地方带。",
+            "便利店灯牌一晃一晃，他说再磨蹭就没那股火了。",
+            "他嘴上说尊重你，脚下却一直把你往死角领。"
+        ],
+        visibleRisk: [
+            { text: "他不想开房，只想找个偏地方赶紧来一下", tone: "risk" },
+            { text: "他一提留下记录就皱眉，像特别怕被谁知道", tone: "warning" }
+        ],
+        visibleSafe: [
+            { text: "他先提议换个更安全更干净的地方", tone: "safe" },
+            { text: "他说街边太脏也太险，不想拿你身体乱赌", tone: "safe" }
+        ],
+        smalltalkRisk: [
+            { text: "他对今晚去过哪儿闪烁其词，像不想让你拼出完整路线。", tone: "warning" },
+            { text: "他说自己向来随缘，能拉到谁就算谁。", tone: "risk" }
+        ],
+        smalltalkSafe: [
+            { text: "他说刚下班脑子发热才会站在这儿，自己都觉得离谱。", tone: "safe" },
+            { text: "他看了几次时间，像还想给自己留退路。", tone: "safe" }
+        ]
+    },
+    {
+        id: "car",
+        label: "车里",
+        riskBias: 8,
+        openerPool: [
+            "车门一关，空间立刻变得只剩下体温和呼吸。",
+            "他把空调调低，视线却一直往你腿上滑。",
+            "狭小的车厢里，他每一句话都像在试你会不会松口。"
+        ],
+        visibleRisk: [
+            { text: "中控台上丢着陌生发圈和拆过的湿巾", tone: "warning" },
+            { text: "他嫌开房麻烦，像更爱把人哄进这种没退路的空间", tone: "risk" }
+        ],
+        visibleSafe: [
+            { text: "他主动说车里不合适，真要继续也得换地方", tone: "safe" },
+            { text: "他把套放进你手里，让你自己决定要不要继续", tone: "safe" }
+        ],
+        smalltalkRisk: [
+            { text: "他说自己常这样兜风顺手约人，熟练得让人发毛。", tone: "risk" },
+            { text: "他把过去几次约会讲得很轻，像把风险当夜生活的配菜。", tone: "warning" }
+        ],
+        smalltalkSafe: [
+            { text: "他说今晚更像冲动开错了门，语气里有点心虚。", tone: "safe" },
+            { text: "他承认自己嘴上厉害，真到临门一脚反而会踩刹车。", tone: "safe" }
+        ]
+    }
+];
+
+const SCENE_PACKS = {
+    male: SCENES,
+    female: FEMALE_SCENES
+};
+
 const BOUNDARY_PROFILES = {
     open_all: {
         id: "open_all",
@@ -408,7 +549,7 @@ const BOUNDARY_PROFILES = {
         clue: {
             text: "明确拒绝无套提议",
             tone: "constraint",
-            detail: "【限制】只接受戴套玩法。"
+            detail: "【限制】只接受全程戴套。"
         },
         disabledActions: ["oral_raw", "sex_raw"]
     },
@@ -417,7 +558,7 @@ const BOUNDARY_PROFILES = {
         clue: {
             text: "一提到套就开始皱眉",
             tone: "constraint",
-            detail: "【限制】心理或生理上抵触戴套。"
+            detail: "【限制】对戴套这件事很抗拒。"
         },
         disabledActions: ["oral_condom", "sex_condom"]
     },
@@ -433,7 +574,7 @@ const BOUNDARY_PROFILES = {
     oral_only: {
         id: "oral_only",
         clue: {
-            text: "只敢边缘试探，不肯插入",
+            text: "只敢做边缘试探，不肯真往深里走",
             tone: "constraint",
             detail: "【限制】只接受口或边缘玩法。"
         },
@@ -681,7 +822,11 @@ function createBaseStats() {
     };
 }
 
-function createRun({ tutorialStage = 0, seed = makeSeed(), mode = MODE_ID } = {}) {
+function getScenePool(mode) {
+    return SCENE_PACKS[mode] || SCENE_PACKS[DEFAULT_MODE_ID];
+}
+
+function createRun({ tutorialStage = 0, seed = makeSeed(), mode = DEFAULT_MODE_ID } = {}) {
     const run = {
         version: SESSION_VERSION,
         mode,
@@ -710,13 +855,13 @@ function createRun({ tutorialStage = 0, seed = makeSeed(), mode = MODE_ID } = {}
 }
 
 function createPartner(run, { firstPartner = false } = {}) {
-    const tutorialScript = firstPartner ? getTutorialScript(run.tutorialStageApplied) : null;
+    const tutorialScript = firstPartner ? getTutorialScript(run.tutorialStageApplied, run.mode) : null;
     if (tutorialScript) {
         run.meta.scriptedPartnerUsed = true;
         return createScriptedPartner(run, tutorialScript);
     }
 
-    const scene = pick(run, SCENES);
+    const scene = pick(run, getScenePool(run.mode));
     const persona = pick(run, PERSONAS);
     const honesty = chooseFromBand(run, persona.honestyRange[0], persona.honestyRange[1]);
     const safetyScore = chooseFromBand(run, persona.safetyRange[0], persona.safetyRange[1]);
@@ -747,127 +892,243 @@ function createPartner(run, { firstPartner = false } = {}) {
     });
 }
 
-function getTutorialScript(stage) {
-    const scripts = [
-        {
-            id: "tutorial-red-flag",
-            stage: 0,
-            introLines: [
-                { tone: "warning", text: "教学 1/3：红旗挂在脸上的时候，离开就是赢。" },
-                { tone: "muted", text: "这一局先学会别被欲望拖着冲。" }
-            ],
-            personaId: "hard_deny",
-            sceneId: "club",
-            riskTier: "high",
-            diseaseIds: ["SYPHILIS", "GONORRHEA"],
-            boundaryId: "open_all",
-            honesty: 18,
-            safetyScore: 18,
-            pushiness: 82,
-            patience: 1,
-            lieType: "hard_deny",
-            opener: "他一见面就贴得很近，像根本不打算给你冷静的时间。",
-            visibleClues: [
-                { text: "身上带着刺鼻的化学甜味", tone: "risk" },
-                { text: "一直催你别开灯、别问太多", tone: "warning" }
-            ],
-            questionBlueprints: {
-                smalltalk: {
-                    replyMode: "risky",
-                    clue: { text: "你一套话，他反而顺嘴说漏自己今晚已经换过两场。", tone: "risk" }
-                },
-                probe: {
-                    replyMode: "hard_deny",
-                    clue: { text: "你追问检测，他只会顶嘴，连上次检测时间都说不清。", tone: "warning", contradiction: true }
-                },
-                boundary: {
-                    replyMode: "pressure",
-                    clue: { text: "他不在乎你舒不舒服，只想尽快推进到最冒险那一步。", tone: "risk" }
+function getTutorialScript(stage, mode = DEFAULT_MODE_ID) {
+    const scriptsByMode = {
+        male: [
+            {
+                id: "tutorial-red-flag",
+                stage: 0,
+                introLines: [
+                    { tone: "warning", text: "教学 1/3：红旗都快贴到脸上了，走人就是赢。" },
+                    { tone: "muted", text: "第一课先学会别让下半身把你拖去送命。" }
+                ],
+                personaId: "hard_deny",
+                sceneId: "club",
+                riskTier: "high",
+                diseaseIds: ["SYPHILIS", "GONORRHEA"],
+                boundaryId: "open_all",
+                honesty: 18,
+                safetyScore: 18,
+                pushiness: 82,
+                patience: 1,
+                lieType: "hard_deny",
+                opener: "他一贴上来就急着把你往更深的地方拱，像根本不打算给你冷静时间。",
+                visibleClues: [
+                    { text: "身上带着刺鼻的化学甜味", tone: "risk" },
+                    { text: "一直催你别开灯、别问太多", tone: "warning" }
+                ],
+                questionBlueprints: {
+                    smalltalk: {
+                        replyMode: "risky",
+                        clue: { text: "你一套话，他反而顺嘴说漏自己今晚已经换过两场。", tone: "risk" }
+                    },
+                    probe: {
+                        replyMode: "hard_deny",
+                        clue: { text: "你追问检测，他只会顶嘴，连上次检测时间都说不清。", tone: "warning", contradiction: true }
+                    },
+                    boundary: {
+                        replyMode: "pressure",
+                        clue: { text: "他不在乎你舒不舒服，只想尽快推进到最冒险那一步。", tone: "risk" }
+                    }
+                }
+            },
+            {
+                id: "tutorial-fake-safe",
+                stage: 1,
+                introLines: [
+                    { tone: "warning", text: "教学 2/3：看着干净，不代表说得圆。" },
+                    { tone: "muted", text: "这局要学会用追问去掀他的漂亮话。" }
+                ],
+                personaId: "fake_sweet",
+                sceneId: "home",
+                riskTier: "uncertain",
+                diseaseIds: ["HERPES"],
+                boundaryId: "condom_only",
+                honesty: 42,
+                safetyScore: 56,
+                pushiness: 34,
+                patience: 2,
+                lieType: "half_truth",
+                opener: "他笑得很温柔，屋里也收拾得干净，第一眼几乎像个能放心脱衣服的人。",
+                visibleClues: [
+                    { text: "洗手台摆着整齐的清洁用品", tone: "safe" },
+                    { text: "明确说无套不聊", tone: "constraint", detail: "【限制】只接受全程戴套。" }
+                ],
+                questionBlueprints: {
+                    smalltalk: {
+                        replyMode: "soft_safe",
+                        clue: { text: "他把自己说得像很少出来，但细节里总像背稿。", tone: "warning" }
+                    },
+                    probe: {
+                        replyMode: "half_truth",
+                        clue: { text: "他说“上周刚测过”，但你一追医院和日期，他立刻开始打岔。", tone: "warning", contradiction: true }
+                    },
+                    boundary: {
+                        replyMode: "boundary_safe",
+                        clue: { text: "他嘴上说尊重边界，但总在暗暗试探你能不能更快更近。", tone: "caution" }
+                    }
+                }
+            },
+            {
+                id: "tutorial-safe-boundary",
+                stage: 2,
+                introLines: [
+                    { tone: "success", text: "教学 3/3：怪，不等于危险。" },
+                    { tone: "muted", text: "这局要学会把“边界硬”跟“人很脏”拆开。" }
+                ],
+                personaId: "shy_clean",
+                sceneId: "dorm",
+                riskTier: "safe",
+                diseaseIds: [],
+                boundaryId: "oral_only",
+                honesty: 88,
+                safetyScore: 90,
+                pushiness: 8,
+                patience: 3,
+                lieType: "honest",
+                opener: "他看起来比你还紧张，像你再多靠近一点他都可能脸红到缩回去。",
+                visibleClues: [
+                    { text: "说话小声，生怕室友听见", tone: "neutral" },
+                    { text: "只敢做边缘试探，不肯真往深里走", tone: "constraint", detail: "【限制】只接受口或边缘玩法。" }
+                ],
+                questionBlueprints: {
+                    smalltalk: {
+                        replyMode: "safe",
+                        clue: { text: "他承认自己经验少，今晚更像是被你推着来的。", tone: "safe" }
+                    },
+                    probe: {
+                        replyMode: "honest_safe",
+                        clue: { text: "他能准确说出上次检测的时间和地点，没有躲闪。", tone: "safe" }
+                    },
+                    boundary: {
+                        replyMode: "boundary_safe",
+                        clue: { text: "他的底线很明确，但不是想骗你冒险，而是真的胆子小。", tone: "safe" }
+                    }
                 }
             }
-        },
-        {
-            id: "tutorial-fake-safe",
-            stage: 1,
-            introLines: [
-                { tone: "warning", text: "教学 2/3：看着干净，不代表说得通。" },
-                { tone: "muted", text: "这局要学会用追问抓矛盾。"}
-            ],
-            personaId: "fake_sweet",
-            sceneId: "home",
-            riskTier: "uncertain",
-            diseaseIds: ["HERPES"],
-            boundaryId: "condom_only",
-            honesty: 42,
-            safetyScore: 56,
-            pushiness: 34,
-            patience: 2,
-            lieType: "half_truth",
-            opener: "他笑得很温柔，屋里也收拾得很干净，第一眼几乎挑不出毛病。",
-            visibleClues: [
-                { text: "洗手台摆着整齐的清洁用品", tone: "safe" },
-                { text: "明确说无套不聊", tone: "constraint", detail: "【限制】只接受戴套玩法。" }
-            ],
-            questionBlueprints: {
-                smalltalk: {
-                    replyMode: "soft_safe",
-                    clue: { text: "他把自己说得像很少出来，但细节里总像背稿。", tone: "warning" }
-                },
-                probe: {
-                    replyMode: "half_truth",
-                    clue: { text: "他说“上周刚测过”，但你一追医院和日期，他立刻开始打岔。", tone: "warning", contradiction: true }
-                },
-                boundary: {
-                    replyMode: "boundary_safe",
-                    clue: { text: "他嘴上说尊重边界，但总在暗暗试探你能不能更快更近。", tone: "caution" }
+        ],
+        female: [
+            {
+                id: "tutorial-red-flag-female",
+                stage: 0,
+                introLines: [
+                    { tone: "warning", text: "教学 1/3：他越急着把你往床上哄，越要先踩刹车。" },
+                    { tone: "muted", text: "第一课先学会识别那种拿欲望压你松口的人。" }
+                ],
+                personaId: "edge_pusher",
+                sceneId: "club",
+                riskTier: "high",
+                diseaseIds: ["SYPHILIS", "GONORRHEA"],
+                boundaryId: "no_condom",
+                honesty: 22,
+                safetyScore: 18,
+                pushiness: 90,
+                patience: 1,
+                lieType: "charm_push",
+                opener: "他一靠近就把话往“别想了，跟我走”上带，像只想趁你脑子还热。",
+                visibleClues: [
+                    { text: "一直催你别磨蹭，像怕你稍微清醒就翻脸", tone: "risk" },
+                    { text: "你一提安全感，他就笑着把话题往气氛上带", tone: "warning" }
+                ],
+                questionBlueprints: {
+                    smalltalk: {
+                        replyMode: "risky",
+                        clue: { text: "你一套话，他顺嘴漏出今晚刚和别人散场。", tone: "risk" }
+                    },
+                    probe: {
+                        replyMode: "charm_push",
+                        clue: { text: "你追问检测记录，他只会笑着哄你别扫兴，日期一句都说不清。", tone: "warning", contradiction: true }
+                    },
+                    boundary: {
+                        replyMode: "pressure",
+                        clue: { text: "你一压边界，他立刻开始试探你能不能把套和底线一起往后挪。", tone: "risk" }
+                    }
+                }
+            },
+            {
+                id: "tutorial-fake-safe-female",
+                stage: 1,
+                introLines: [
+                    { tone: "warning", text: "教学 2/3：会给你安全感，不代表真安全。" },
+                    { tone: "muted", text: "这局要学会从温柔和体面里抓说辞漏洞。" }
+                ],
+                personaId: "fake_sweet",
+                sceneId: "home",
+                riskTier: "uncertain",
+                diseaseIds: ["HERPES"],
+                boundaryId: "condom_only",
+                honesty: 44,
+                safetyScore: 58,
+                pushiness: 30,
+                patience: 2,
+                lieType: "half_truth",
+                opener: "他屋里很干净，说话也温柔，第一眼像那种会让人放下防备的男的。",
+                visibleClues: [
+                    { text: "套和湿巾摆得很显眼，像故意让你看见", tone: "safe" },
+                    { text: "嘴上说无套不聊", tone: "constraint", detail: "【限制】只接受全程戴套。" }
+                ],
+                questionBlueprints: {
+                    smalltalk: {
+                        replyMode: "soft_safe",
+                        clue: { text: "他把自己包装得很克制，可细节里总像背熟了台词。", tone: "warning" }
+                    },
+                    probe: {
+                        replyMode: "half_truth",
+                        clue: { text: "他说“前阵子刚测过”，但你一问日期和医院，他立刻开始绕。", tone: "warning", contradiction: true }
+                    },
+                    boundary: {
+                        replyMode: "boundary_safe",
+                        clue: { text: "他嘴上说尊重你，实际一直在试探你能不能更快脱防备。", tone: "caution" }
+                    }
+                }
+            },
+            {
+                id: "tutorial-safe-boundary-female",
+                stage: 2,
+                introLines: [
+                    { tone: "success", text: "教学 3/3：边界很硬，不代表他想坑你。" },
+                    { tone: "muted", text: "这局要学会区分“他谨慎”跟“他有鬼”。" }
+                ],
+                personaId: "cautious_rookie",
+                sceneId: "car",
+                riskTier: "safe",
+                diseaseIds: [],
+                boundaryId: "condom_only",
+                honesty: 90,
+                safetyScore: 92,
+                pushiness: 10,
+                patience: 3,
+                lieType: "honest",
+                opener: "他嘴上也有火，但一直踩着刹车，像怕自己一冲动就越线。",
+                visibleClues: [
+                    { text: "他主动把套塞到你手里，让你自己决定", tone: "safe" },
+                    { text: "一提到底线，他先把安全放在前面", tone: "constraint", detail: "【限制】只接受全程戴套。" }
+                ],
+                questionBlueprints: {
+                    smalltalk: {
+                        replyMode: "safe",
+                        clue: { text: "他承认自己也会上头，但更怕把事情搞脏。", tone: "safe" }
+                    },
+                    probe: {
+                        replyMode: "honest_safe",
+                        clue: { text: "他能清楚说出上次检测时间和结果，没有闪躲。", tone: "safe" }
+                    },
+                    boundary: {
+                        replyMode: "boundary_safe",
+                        clue: { text: "他的底线很明确，重点是怕你吃亏，不是怕自己扫兴。", tone: "safe" }
+                    }
                 }
             }
-        },
-        {
-            id: "tutorial-safe-boundary",
-            stage: 2,
-            introLines: [
-                { tone: "success", text: "教学 3/3：怪，不等于危险。" },
-                { tone: "muted", text: "这局主要学会区分“边界”与“高危”。" }
-            ],
-            personaId: "shy_clean",
-            sceneId: "dorm",
-            riskTier: "safe",
-            diseaseIds: [],
-            boundaryId: "oral_only",
-            honesty: 88,
-            safetyScore: 90,
-            pushiness: 8,
-            patience: 3,
-            lieType: "honest",
-            opener: "他看起来比你还紧张，像随时准备说算了。",
-            visibleClues: [
-                { text: "说话小声，生怕室友听见", tone: "neutral" },
-                { text: "只敢边缘试探，不肯插入", tone: "constraint", detail: "【限制】只接受口或边缘玩法。" }
-            ],
-            questionBlueprints: {
-                smalltalk: {
-                    replyMode: "safe",
-                    clue: { text: "他承认自己经验少，今晚更像是被你推着来的。", tone: "safe" }
-                },
-                probe: {
-                    replyMode: "honest_safe",
-                    clue: { text: "他能准确说出上次检测的时间和地点，没有躲闪。", tone: "safe" }
-                },
-                boundary: {
-                    replyMode: "boundary_safe",
-                    clue: { text: "他的底线很明确，但不是想骗你冒险，而是真的胆子小。", tone: "safe" }
-                }
-            }
-        }
-    ];
+        ]
+    };
 
+    const scripts = scriptsByMode[mode] || scriptsByMode[DEFAULT_MODE_ID];
     return scripts[stage] || null;
 }
 
 function createScriptedPartner(run, script) {
     const persona = PERSONAS.find((item) => item.id === script.personaId);
-    const scene = SCENES.find((item) => item.id === script.sceneId);
+    const scene = getScenePool(run.mode).find((item) => item.id === script.sceneId);
     const boundary = BOUNDARY_PROFILES[script.boundaryId];
 
     return finalizePartner(run, {
@@ -1196,83 +1457,83 @@ function buildReply(run, partner, questionType, mode) {
     if (questionType === "smalltalk") {
         if (mode === "safe" || mode === "soft_safe") {
             core = pick(run, [
-                "他聊起最近生活时没怎么绕，说自己其实不常这样出来。",
-                "他提起这阵子压力很大，但语气更像偶尔失控，不像长期乱玩。",
-                "他能说出今晚之前都在干嘛，时间线基本顺。"
+                "“我平时真没这么疯，今晚算我色迷心窍。”",
+                "“最近忙得跟狗一样，真不是天天出来找人滚床单。”",
+                "“今晚之前我都在忙自己的事，临时起火才会站到你面前。”"
             ]);
         } else if (mode === "risky") {
             core = pick(run, [
-                "他越想装轻松，越显得今晚不是第一次这样赶场。",
-                "他说自己只是随便看看，但细节里全是熟门熟路。",
-                "他把今晚描述得太熟练，像这套流程跑过很多次。"
+                "“别问得像查岗，我今晚也就顺路出来放个火。”",
+                "“你放心，我熟归熟，不代表我脏到见谁都上。”",
+                "“这种局我确实不止玩过一次，但你别一副要给我立案的样子。”"
             ]);
         } else {
             core = pick(run, [
-                "他表面上讲得很圆，但总有几个细节落不到地上。",
-                "他说的东西不全是假，只是关键部分总爱一笔带过。",
-                "他的生活线索听起来正常，却有一股刻意经营出来的安全感。"
+                "“你要问我最近干嘛，我能说，但你别盯着那点细节不放。”",
+                "“我不是没见过人，只是没你想得那么乱。”",
+                "“你真想听，我能聊，只不过有些事没必要摊得太明白。”"
             ]);
         }
     } else if (questionType === "probe") {
-        if (mode === "honest") {
+        if (mode === "honest" || mode === "honest_safe") {
             core = pick(run, [
-                "他没有躲，直接把上次检测和近况都交代了。",
-                "你一问检测，他给的回答具体到不像临时编的。",
-                "他答得不花哨，但细节都能对上。"
+                "“上次检测是前阵子，在医院做的，结果我还留着。”",
+                "“你问检测我能直接说，时间、地方、结果都对得上。”",
+                "“这事我不跟你打马虎眼，该做的检查我做过。”"
             ]);
         } else if (mode === "hard_deny") {
             core = pick(run, [
-                "他根本不回答具体问题，只剩一句“我没事”。",
-                "一问到检测记录，他立刻翻脸，像被戳到了痛点。",
-                "他说来说去只有情绪，信息量几乎是零。"
+                "“我没事，你爱信不信，别把裤子还没脱就问成审讯。”",
+                "“你老追着检测问什么，我说了没事就是没事。”",
+                "“真要这么不放心，你现在就走，别在这儿磨我。”"
             ]);
             tail = pick(run, voice.deflects);
         } else if (mode === "half_truth") {
             core = pick(run, [
-                "他给你一半答案，另一半全靠糊弄过去。",
-                "他先拿模糊的“最近测过”稳你，再刻意避开日期和地点。",
-                "他不是完全撒谎，但最关键的地方明显在藏。"
+                "“前阵子测过吧，反正没出事，你别揪着日期不放。”",
+                "“我不是不告诉你，只是这种细节真没必要一条条报账。”",
+                "“结果大差不差是干净的，至于哪天做的你别逼我背台词。”"
             ]);
             tail = pick(run, voice.deflects);
         } else if (mode === "charm_push") {
             core = pick(run, [
-                "他一边安抚你，一边把问题往“你别紧张”上带走。",
-                "他知道该怎么让人放松，却始终不给你真正有用的信息。",
-                "他把检测问题讲得像情绪问题，试图让你别继续追。"
+                "“你先别这么紧，真想稳一点我也能配合，别把气氛弄凉。”",
+                "“你再这么盘我，我都要怀疑你是来抓人还是来上床的。”",
+                "“我懂你怕什么，但你也别把每句话都问成病历。”"
             ]);
             tail = pick(run, voice.deflects);
         } else {
             core = pick(run, [
-                "他表面接住了问题，实际还是什么都没说清。",
-                "你能感觉到他在回避，只是方式没那么粗暴。",
-                "他说得很顺，但关键节点依旧模糊。"
+                "“这事我能说，但你别指望我把每个时间点都背给你。”",
+                "“不是我故意躲，你这么问谁都会先想想怎么回答。”",
+                "“我没想骗你，只是有些问题你问得真够直的。”"
             ]);
             tail = pick(run, voice.deflects);
         }
     } else {
         if (mode === "boundary_safe") {
             core = pick(run, [
-                "他谈到底线时非常明确，尤其把防护放在第一位。",
-                "他不像在试探你能退让多少，反而像怕你乱来。",
-                "你一聊边界，他的重点全是怎么把风险降下来。"
+                "“想继续可以，但套必须戴，别拿上头当借口。”",
+                "“我可以跟你玩，但底线得先说死，风险别想往我身上甩。”",
+                "“你要是真想碰，那就按最稳的来，别一热就乱来。”"
             ]);
         } else if (mode === "pressure") {
             core = pick(run, [
-                "你一压边界，他立刻开始把话题往刺激和快感上拽。",
-                "他对边界的反应不是解释，而是想让你少想一点。",
-                "他说的不是规则，而是怎么把你哄进更冒险的选项里。"
+                "“别聊那么细，真到那一步你身体比脑子诚实。”",
+                "“都到这儿了，你不会还想一层层给自己上锁吧？”",
+                "“你先别把气氛掐死，真爽起来的时候没人还记得这些。”"
             ]);
             tail = pick(run, voice.deflects);
         } else {
             core = pick(run, [
-                "他对边界有自己的说法，但里面混着一点防备和一点试探。",
-                "你能听出来他不是完全没底线，只是并不想把话说死。",
-                "他的边界不算干净利落，却也不是纯粹想骗你。"
+                "“我不是完全没底线，只是也没你想得那么规规矩矩。”",
+                "“你要我现在把每一步说死，我也做不到那么假正经。”",
+                "“边界我有，但不是每句话都想说得像合同。”"
             ]);
         }
     }
 
-    return [opening, core, tail, close].filter(Boolean).join("");
+    return [opening, core, tail, close].filter(Boolean).join(" ");
 }
 
 function getPanicClue(questionType) {
@@ -1296,7 +1557,7 @@ function getPanicClue(questionType) {
     };
 }
 
-function createEvent({ title, icon, lines, tone = "default", closeMode = "close", closeLabel = null, disease = null, criticalReason = null, casebookUnlocks = null }) {
+function createEvent({ title, icon, lines, tone = "default", closeMode = "close", closeLabel = null, disease = null, criticalReason = null, casebookUnlocks = null, polishSpec = null }) {
     return {
         title,
         icon,
@@ -1306,7 +1567,8 @@ function createEvent({ title, icon, lines, tone = "default", closeMode = "close"
         closeLabel: closeLabel || (closeMode === "close" ? "关闭" : "继续"),
         disease,
         criticalReason,
-        casebookUnlocks
+        casebookUnlocks,
+        polishSpec
     };
 }
 
@@ -1380,14 +1642,14 @@ function buildChatUi(partner, run) {
         reason: partner.questionsAsked[type]
             ? "这个问题已经问过了"
             : disabledByPatience
-                ? "ta 已经不想继续聊了"
+                ? "他已经懒得继续跟你扯了"
                 : ""
     }));
 
     return {
         available: !disabledByPatience && !disabledByPanic,
         remaining,
-        label: disabledByPatience ? "ta 开始不耐烦" : `试探 / 聊天 · 还剩 ${remaining} 次`,
+        label: disabledByPatience ? "他开始不耐烦了" : `试探 / 聊天 · 还剩 ${remaining} 次`,
         options
     };
 }
@@ -1407,6 +1669,7 @@ function buildUiState(run) {
 
     return {
         mode: run.mode,
+        runPhase: run.gameOver ? "result" : "active",
         stats: {
             frustration: run.frustration,
             anxiety: run.anxiety,
@@ -1451,7 +1714,7 @@ function buildIntroEvent(run) {
     }
 
     return createEvent({
-        title: "今晚规则有点变了",
+        title: "先别急着脱",
         icon: "🕵️",
         lines,
         closeMode: "close"
@@ -1542,8 +1805,8 @@ function buildEndingEvent(run, endingId, extraLines = [], diseaseKey = null) {
             icon: "✨",
             tone: "success",
             lines: [
-                { tone: "success", text: "你把压抑值清零了，而且身体还是干净的。" },
-                { tone: "muted", text: "这次你赢的不是运气，是判断。"}
+                { tone: "success", text: "你把这团火泄干净了，身体也还没被谁留下脏账。" },
+                { tone: "muted", text: "这次你赢的不是侥幸，是你没被气氛骗上床。"}
             ]
         },
         bad_win: {
@@ -1551,8 +1814,8 @@ function buildEndingEvent(run, endingId, extraLines = [], diseaseKey = null) {
             icon: "🥀",
             tone: "danger",
             lines: [
-                { tone: "warning", text: "压抑值是清零了，但几天后你还是等来了异常反应。" },
-                { tone: "muted", text: "你赢了当下，输掉了后果。"}
+                { tone: "warning", text: "当晚是爽到了，几天后身体还是替你把这笔烂账结了。" },
+                { tone: "muted", text: "你赢了那一下，输给了后劲。"}
             ]
         },
         burnout: {
@@ -1560,8 +1823,8 @@ function buildEndingEvent(run, endingId, extraLines = [], diseaseKey = null) {
             icon: "🤯",
             tone: "danger",
             lines: [
-                { tone: "warning", text: "长期压抑把你一路顶到失控，理性彻底断线。" },
-                { tone: "muted", text: "你不是输给了某个人，是输给了自己越来越急。"}
+                { tone: "warning", text: "压抑一路烧穿了脑子，你后面看到的已经不是人，是泄火工具。" },
+                { tone: "muted", text: "你不是输给了谁，是输给了自己越来越急的那团火。"}
             ]
         },
         breakdown: {
@@ -1569,8 +1832,8 @@ function buildEndingEvent(run, endingId, extraLines = [], diseaseKey = null) {
             icon: "😵‍💫",
             tone: "danger",
             lines: [
-                { tone: "warning", text: "心理压力彻底爆表，你已经没有余力继续判断谁在骗你。" },
-                { tone: "muted", text: "恐慌把一切细节都碾平了。"}
+                { tone: "warning", text: "心理压力彻底爆表，你已经没本事分清谁在撩你，谁在坑你。" },
+                { tone: "muted", text: "恐慌一上头，所有细节都被你自己抹平了。"}
             ]
         },
         confirmed_infection: {
@@ -1578,8 +1841,8 @@ function buildEndingEvent(run, endingId, extraLines = [], diseaseKey = null) {
             icon: "🏥",
             tone: "danger",
             lines: [
-                { tone: "warning", text: "医院把最后那点侥幸直接掐灭了。" },
-                { tone: "muted", text: "延迟判决终于落下，只是结果不好。"}
+                { tone: "warning", text: "医院把你最后那点侥幸按死了，报告单比谁都冷。 " },
+                { tone: "muted", text: "延迟判决终于落下，只是砸你头上的不是好运。"}
             ]
         }
     }[endingId];
@@ -1603,7 +1866,19 @@ function buildEndingEvent(run, endingId, extraLines = [], diseaseKey = null) {
             closeLabel: "返回首页",
             disease,
             criticalReason,
-            casebookUnlocks: unlocks
+            casebookUnlocks: unlocks,
+            polishSpec: {
+                kind: "ending",
+                frame: {
+                    mode: run.mode,
+                    endingId,
+                    title: base.title,
+                    summary,
+                    criticalReason,
+                    disease: disease?.name || null,
+                    infected: run.player.infected
+                }
+            }
         }),
         unlocks
     };
@@ -1612,21 +1887,21 @@ function buildEndingEvent(run, endingId, extraLines = [], diseaseKey = null) {
 function buildCriticalReason(run, endingId) {
     if (endingId === "survive") {
         if (run.stats.leaveCount > 0) {
-            return "你能活下来，关键不是莽，而是该走的时候真走了。";
+            return "你能全身而退，不是因为你不色，是因为你该抽身的时候真抽了。";
         }
 
-        return "你能活下来，关键是没有被“看着安全”这件事骗过去。";
+        return "你能活下来，关键是没把“看着能睡”误判成“真的安全”。";
     }
 
     if (endingId === "bad_win" || endingId === "confirmed_infection") {
-        return "你输在把“暂时没出事”误判成了“真的安全”。";
+        return "你输在把“当场没翻车”误判成了“这人真没毒”。";
     }
 
     if (endingId === "burnout") {
-        return "你输在压抑值一路堆高之后，开始把任何人都看成救火工具。";
+        return "你输在那团火越烧越急，最后谁都被你看成灭火器。";
     }
 
-    return "你输在压力过高后，已经分不清真实线索和自我安慰了。";
+    return "你输在压力把脑子拧坏了，后面分不清真线索和自我哄骗。";
 }
 
 function buildCasebookUnlocks(run, endingId = null, diseaseKey = null, encounteredPartner = null) {
@@ -1758,7 +2033,20 @@ function applyChat(run, questionType) {
         icon: questionType === "probe" ? "🧪" : questionType === "boundary" ? "🧭" : "💬",
         lines,
         closeMode: "close",
-        casebookUnlocks: unlocks
+        casebookUnlocks: unlocks,
+        polishSpec: {
+            kind: "chat",
+            frame: {
+                mode: run.mode,
+                persona: partner.personaLabel,
+                scene: partner.sceneLabel,
+                topic: questionType,
+                replyMode: blueprint.replyMode,
+                contradiction: Boolean(blueprint.clue.contradiction),
+                fallback: lines[0].text,
+                clue: clue.text
+            }
+        }
     });
 
     return {
@@ -2006,7 +2294,7 @@ function applyAction(run, actionType) {
 }
 
 function assertRunShape(run) {
-    if (!run || run.version !== SESSION_VERSION || run.mode !== MODE_ID) {
+    if (!run || run.version !== SESSION_VERSION || !SUPPORTED_MODES.includes(run.mode)) {
         throw new Error("INVALID_SESSION");
     }
 }
@@ -2148,13 +2436,210 @@ async function parseJsonBody(request) {
     }
 }
 
+function hasAiBinding(env) {
+    return Boolean(env && env.AI && typeof env.AI.run === "function");
+}
+
+function makePolishSeed(run, salt = 0) {
+    return (run.runSeed ^ Math.imul(run.turn + 11, 2654435761) ^ salt) >>> 0;
+}
+
+function parseAiJsonCandidate(candidate) {
+    if (!candidate) {
+        return null;
+    }
+
+    if (typeof candidate === "object") {
+        return candidate;
+    }
+
+    if (typeof candidate !== "string") {
+        return null;
+    }
+
+    const trimmed = candidate.trim();
+    if (!trimmed) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(trimmed);
+    } catch (error) {
+        return null;
+    }
+}
+
+function extractAiJson(result) {
+    if (!result) {
+        return null;
+    }
+
+    if (typeof result.response === "object" && result.response) {
+        return result.response;
+    }
+
+    if (typeof result.response === "string") {
+        return parseAiJsonCandidate(result.response);
+    }
+
+    const content = result.choices?.[0]?.message?.content;
+    if (typeof content === "string") {
+        return parseAiJsonCandidate(content) || { text: content.trim() };
+    }
+
+    if (Array.isArray(content)) {
+        const merged = content.map((part) => {
+            if (typeof part === "string") {
+                return part;
+            }
+
+            return part?.text || "";
+        }).join("").trim();
+
+        return parseAiJsonCandidate(merged) || (merged ? { text: merged } : null);
+    }
+
+    if (typeof result === "string") {
+        return parseAiJsonCandidate(result) || { text: result.trim() };
+    }
+
+    return null;
+}
+
+async function withTimeout(promise, timeoutMs) {
+    let timeoutId = null;
+
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("AI_TIMEOUT")), timeoutMs);
+    });
+
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+        }
+    }
+}
+
+async function runAiJson(env, schemaName, schema, messages, seed) {
+    if (!hasAiBinding(env)) {
+        return null;
+    }
+
+    try {
+        const result = await withTimeout(
+            env.AI.run(AI_MODEL, {
+                messages,
+                seed,
+                temperature: 0.25,
+                max_tokens: 180,
+                response_format: {
+                    type: "json_schema",
+                    json_schema: {
+                        name: schemaName,
+                        strict: true,
+                        schema
+                    }
+                }
+            }),
+            AI_TIMEOUT_MS
+        );
+
+        return extractAiJson(result);
+    } catch (error) {
+        console.warn("Workers AI polish fallback:", error.message || error);
+        return null;
+    }
+}
+
+async function polishChatEvent(event, run, env) {
+    const schema = {
+        type: "object",
+        properties: {
+            text: { type: "string" }
+        },
+        required: ["text"],
+        additionalProperties: false
+    };
+    const frame = event.polishSpec?.frame;
+    const response = await runAiJson(
+        env,
+        "chat_polish",
+        schema,
+        [
+            {
+                role: "system",
+                content: "你负责把成人小游戏里的对象回复润色得更像真人说话。保持事实不变，不新增任何检测、病情、边界或事件信息。风格要挑逗、辛辣、黑色、露骨但克制，中文短句，像人当面回话。不要写成旁白，不要扩写成长段，不要出现未成年、强迫或暴力。只返回 JSON。"
+            },
+            {
+                role: "user",
+                content: JSON.stringify(frame)
+            }
+        ],
+        makePolishSeed(run, 17)
+    );
+
+    if (typeof response?.text === "string" && response.text.trim()) {
+        event.lines[0].text = response.text.trim();
+    }
+}
+
+async function polishEndingEvent(event, run, env) {
+    const schema = {
+        type: "object",
+        properties: {
+            summary: { type: "string" }
+        },
+        required: ["summary"],
+        additionalProperties: false
+    };
+    const frame = event.polishSpec?.frame;
+    const response = await runAiJson(
+        env,
+        "ending_polish",
+        schema,
+        [
+            {
+                role: "system",
+                content: "你负责把成人小游戏整轮结束后的复盘总结润色成一句辛辣、黑色、露骨但克制的中文短评。保持事实和结局不变，不新增信息，不改变输赢原因，不写说教。只返回 JSON。"
+            },
+            {
+                role: "user",
+                content: JSON.stringify(frame)
+            }
+        ],
+        makePolishSeed(run, 41)
+    );
+
+    if (typeof response?.summary === "string" && response.summary.trim()) {
+        event.criticalReason = response.summary.trim();
+    }
+}
+
+async function prepareEventForClient(event, run, env) {
+    if (!event) {
+        return event;
+    }
+
+    const prepared = clone(event);
+    if (prepared.polishSpec?.kind === "chat") {
+        await polishChatEvent(prepared, run, env);
+    } else if (prepared.polishSpec?.kind === "ending") {
+        await polishEndingEvent(prepared, run, env);
+    }
+
+    delete prepared.polishSpec;
+    return prepared;
+}
+
 function bootstrapPayload(env = {}) {
     return {
         ok: true,
         app: {
             name: "month-pass-simulator",
             version: env.APP_VERSION || "2026-03-29",
-            aiEnabled: false,
+            aiEnabled: hasAiBinding(env),
             mode: "worker-authoritative"
         },
         endpoints: {
@@ -2167,8 +2652,14 @@ function bootstrapPayload(env = {}) {
             runtimeConfig: true,
             workerRequired: true,
             chatQuestions: true,
-            casebook: true
-        }
+            casebook: true,
+            modes: SUPPORTED_MODES.slice(),
+            aiPolish: hasAiBinding(env)
+        },
+        modes: SUPPORTED_MODES.map((mode) => ({
+            id: mode,
+            label: mode === "female" ? "女生视角" : "男生视角"
+        }))
     };
 }
 
@@ -2214,9 +2705,9 @@ export async function handleApiRequest(request, env = {}) {
 
         try {
             const body = await parseJsonBody(request);
-            const mode = body.mode || MODE_ID;
-            if (mode !== MODE_ID) {
-                return badRequest("Only male mode is enabled in this build.");
+            const mode = body.mode || DEFAULT_MODE_ID;
+            if (!SUPPORTED_MODES.includes(mode)) {
+                return badRequest("Unsupported mode.");
             }
 
             const payload = startRunPayload({
@@ -2224,13 +2715,14 @@ export async function handleApiRequest(request, env = {}) {
                 mode
             });
             const sessionToken = await issueSessionToken(payload.run, env);
+            const introEvent = await prepareEventForClient(payload.introEvent, payload.run, env);
 
             return json(
                 {
                     ok: true,
                     sessionToken,
                     uiState: payload.uiState,
-                    introEvent: payload.introEvent,
+                    introEvent,
                     nextTutorialStage: payload.nextTutorialStage,
                     casebookUnlocks: payload.unlocks
                 },
@@ -2264,13 +2756,14 @@ export async function handleApiRequest(request, env = {}) {
             const run = await readSessionToken(body.sessionToken, env);
             const payload = chatPayload(run, body.questionType);
             const sessionToken = await issueSessionToken(payload.run, env);
+            const event = await prepareEventForClient(payload.event, payload.run, env);
 
             return json(
                 {
                     ok: true,
                     sessionToken,
                     uiState: payload.uiState,
-                    event: payload.event,
+                    event,
                     casebookUnlocks: payload.unlocks
                 },
                 200,
@@ -2295,13 +2788,14 @@ export async function handleApiRequest(request, env = {}) {
             const run = await readSessionToken(body.sessionToken, env);
             const payload = actionPayload(run, body.actionType);
             const sessionToken = await issueSessionToken(payload.run, env);
+            const event = await prepareEventForClient(payload.event, payload.run, env);
 
             return json(
                 {
                     ok: true,
                     sessionToken,
                     uiState: payload.uiState,
-                    event: payload.event,
+                    event,
                     casebookUnlocks: payload.unlocks
                 },
                 200,

@@ -12,15 +12,16 @@
         <main id="game-container" class="game-panel" hidden>
             <header class="panel-header">
                 <div class="panel-brand">
-                    <span class="brand-eyebrow">Panic Edition</span>
+                    <span class="brand-eyebrow">识人赌局</span>
                     <h1 class="brand-gradient">月抛模拟器</h1>
                 </div>
                 <div class="panel-meta">
+                    <div id="mode-chip" class="mode-chip">男生视角</div>
                     <div class="turn-chip">
                         <span class="turn-chip__label">回合</span>
                         <strong id="turn-count" class="turn-chip__value">01</strong>
                     </div>
-                    <div id="build-chip" class="build-chip">Edge 检查中</div>
+                    <div id="build-chip" class="build-chip">服务器检查中</div>
                 </div>
             </header>
 
@@ -70,68 +71,77 @@
             </section>
 
             <section id="game-content" class="game-body">
-                <div class="partner-card">
-                    <div class="avatar-frame">
-                        <span id="avatar-emoji" class="avatar-emoji">🌚</span>
-                        <span id="partner-status" class="partner-status" hidden>⚠️</span>
+                <div id="game-scroll" class="game-scroll">
+                    <div class="partner-card">
+                        <div class="avatar-frame">
+                            <span id="avatar-emoji" class="avatar-emoji">🌚</span>
+                            <span id="partner-status" class="partner-status" hidden>⚠️</span>
+                        </div>
+                        <h2 class="partner-title">潜在伴侣</h2>
+                        <p id="scene-label" class="partner-scene">场景：-</p>
+                        <p id="flirt-text" class="partner-quote">"..."</p>
                     </div>
-                    <h2 class="partner-title">潜在伴侣</h2>
-                    <p id="scene-label" class="partner-scene">场景：-</p>
-                    <p id="flirt-text" class="partner-quote">"..."</p>
+
+                    <div class="objective-card">
+                        <strong>这一轮你在干嘛</strong>
+                        <p>先试探，抓矛盾，再决定要不要碰。试纸给强线索，医院给硬答案。</p>
+                    </div>
+
+                    <div id="tags-container" class="tags-grid" aria-live="polite"></div>
                 </div>
 
-                <div id="tags-container" class="tags-grid" aria-live="polite"></div>
+                <div class="game-actions">
+                    <div class="action-stack">
+                        <button id="btn-chat" class="button button--chat" type="button">
+                            <span>💬</span>
+                            <span id="chat-button-label">试探 / 聊天</span>
+                            <span id="chat-button-note" class="button-note">还剩 2 次</span>
+                        </button>
 
-                <div class="action-stack">
-                    <button id="btn-chat" class="button button--chat" type="button">
-                        <span>💬</span>
-                        <span id="chat-button-label">试探 / 聊天</span>
-                        <span id="chat-button-note" class="button-note">还剩 2 次</span>
-                    </button>
+                        <div id="chat-panel" class="chat-panel" hidden>
+                            <div class="chat-panel__hint">从一个角度切进去，别把人一次问死。</div>
+                            <div class="chat-panel__grid">
+                                <button id="chat-smalltalk-btn" class="chat-option" type="button" data-question-type="smalltalk">
+                                    <strong>套话</strong>
+                                    <span>聊生活细节</span>
+                                </button>
+                                <button id="chat-probe-btn" class="chat-option" type="button" data-question-type="probe">
+                                    <strong>追问</strong>
+                                    <span>逼时间线</span>
+                                </button>
+                                <button id="chat-boundary-btn" class="chat-option" type="button" data-question-type="boundary">
+                                    <strong>压边界</strong>
+                                    <span>看底线态度</span>
+                                </button>
+                            </div>
+                        </div>
 
-                    <div id="chat-panel" class="chat-panel" hidden>
-                        <div class="chat-panel__hint">从一个角度切进去，别把人一次问死。</div>
-                        <div class="chat-panel__grid">
-                            <button id="chat-smalltalk-btn" class="chat-option" type="button" data-question-type="smalltalk">
-                                <strong>套话</strong>
-                                <span>聊生活细节</span>
+                        <div class="action-divider"></div>
+
+                        <div class="action-grid">
+                            <button id="btn-oral-condom" class="button action-button action-button--mild" type="button" data-action="oral_condom">
+                                <span>🍬 戴套口交</span>
+                                <small>低收益 | 很稳</small>
                             </button>
-                            <button id="chat-probe-btn" class="chat-option" type="button" data-question-type="probe">
-                                <strong>追问</strong>
-                                <span>逼时间线</span>
+                            <button id="btn-sex-condom" class="button action-button action-button--safe" type="button" data-action="sex_condom">
+                                <span>🛡️ 戴套做爱</span>
+                                <small>主力释放 | 稳定</small>
                             </button>
-                            <button id="chat-boundary-btn" class="chat-option" type="button" data-question-type="boundary">
-                                <strong>压边界</strong>
-                                <span>看底线态度</span>
+                            <button id="btn-oral-raw" class="button action-button action-button--risk" type="button" data-action="oral_raw">
+                                <span>🍭 无套口交</span>
+                                <small>中收益 | 风险抬头</small>
+                            </button>
+                            <button id="btn-sex-raw" class="button action-button action-button--danger" type="button" data-action="sex_raw">
+                                <span>🔥 无套做爱</span>
+                                <small>高收益 | 最大赌局</small>
                             </button>
                         </div>
-                    </div>
 
-                    <div class="action-divider"></div>
-
-                    <div class="action-grid">
-                        <button id="btn-oral-condom" class="button action-button action-button--mild" type="button" data-action="oral_condom">
-                            <span>🍬 戴套口交</span>
-                            <small>低收益 | 很稳</small>
-                        </button>
-                        <button id="btn-sex-condom" class="button action-button action-button--safe" type="button" data-action="sex_condom">
-                            <span>🛡️ 戴套性交</span>
-                            <small>主力释放 | 稳定</small>
-                        </button>
-                        <button id="btn-oral-raw" class="button action-button action-button--risk" type="button" data-action="oral_raw">
-                            <span>🍭 无套口交</span>
-                            <small>中收益 | 风险抬头</small>
-                        </button>
-                        <button id="btn-sex-raw" class="button action-button action-button--danger" type="button" data-action="sex_raw">
-                            <span>🔥 无套性交</span>
-                            <small>高收益 | 最大赌局</small>
+                        <button id="btn-refuse" class="button button--ghost" type="button" data-action="refuse">
+                            <span>👋</span>
+                            <span>换一个 (压抑值 +8)</span>
                         </button>
                     </div>
-
-                    <button id="btn-refuse" class="button button--ghost" type="button" data-action="refuse">
-                        <span>👋</span>
-                        <span>换一个 (压抑值 +8)</span>
-                    </button>
                 </div>
             </section>
         </main>
@@ -142,22 +152,25 @@
             <div class="modal-head">
                 <div class="modal-emoji">💘</div>
                 <h1 class="modal-title">月抛模拟器</h1>
-                <p class="modal-kicker">Worker Authority Build</p>
-                <p id="runtime-note" class="runtime-note">正在检查 Edge 运行时。如果 Worker 掉线，这版不会允许开局。</p>
+                <p class="modal-kicker">先识人，再决定碰不碰</p>
+                <p id="runtime-note" class="runtime-note">正在连服务器。没连上之前先别开局。</p>
             </div>
 
             <div class="intro-copy">
                 <div class="info-card">
-                    <p>1. <b>延迟判决</b>：高危行为后，你不会立刻知道自己是否感染。</p>
-                    <p>2. <b>三类试探</b>：套话、追问、压边界，各自挖不同类型的证据。</p>
-                    <p>3. <b>医院最硬</b>：想确认自己有没有事，医院仍是唯一硬答案。</p>
-                    <p>4. <b>案件簿</b>：对象、话术和结局会被记录，但不加属性，不搞养成。</p>
+                    <p><b>你要做的事：</b>先试探，看他说话有没有破绽，再决定要不要碰。</p>
+                    <p><b>你怕的不是当场翻车：</b>很多后果不会立刻揭晓，赌错了会在后面找上你。</p>
+                    <p><b>三样关键工具：</b>套话抓生活细节，追问抓矛盾，压边界看他到底想把你往哪一步拱。</p>
+                    <p><b>试纸是强线索，医院是硬答案。</b>真要查自己是不是中招，只有医院说了算。</p>
+                </div>
+
+                <div class="mode-actions">
+                    <button id="start-male-btn" class="button button--primary" type="button" data-mode="male" disabled>男生视角开局</button>
+                    <button id="start-female-btn" class="button button--primary button--primary-alt" type="button" data-mode="female" disabled>女生视角开局</button>
                 </div>
 
                 <div class="modal-actions">
-                    <button id="start-game-btn" class="button button--primary" type="button" disabled>连接 Edge 后开始</button>
                     <button id="open-help-btn" class="button button--secondary" type="button">📖 游戏帮助</button>
-                    <button id="open-casebook-btn" class="button button--secondary" type="button">🗂️ 打开案件簿</button>
                 </div>
             </div>
         </div>
@@ -207,6 +220,7 @@
             </div>
 
             <div class="help-footer">
+                <button id="open-casebook-help-btn" class="button button--secondary" type="button">🗂️ 查看案件簿</button>
                 <button class="button button--secondary" type="button" data-close-help>知道了</button>
             </div>
         </div>
@@ -269,7 +283,7 @@
 
             <details id="history-container" class="history-panel" hidden open>
                 <summary class="history-toggle">
-                    <span class="history-title">约会记录复盘</span>
+                    <span class="history-title">本轮约会记录复盘</span>
                     <span class="history-toggle__meta">点击展开 / 收起</span>
                 </summary>
                 <div id="history-list" class="history-list custom-scroll"></div>

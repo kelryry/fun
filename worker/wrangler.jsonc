@@ -2,6 +2,9 @@
   "name": "fun-edge-api",
   "main": "src/index.js",
   "compatibility_date": "2026-03-28",
+  "ai": {
+    "binding": "AI"
+  },
   "observability": {
     "enabled": true
   },

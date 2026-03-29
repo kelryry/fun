@@ -1,8 +1,21 @@
 window.GAME_DATA = {
-    MODE: "male",
     STORAGE_KEYS: {
         tutorialStage: "month-pass-tutorial-stage-v2",
         casebook: "month-pass-casebook-v2"
+    },
+    MODES: {
+        male: {
+            id: "male",
+            label: "男生视角",
+            startLabel: "男生视角开局",
+            summary: "盯着他有没有在拿经验和嘴皮子骗你上头。"
+        },
+        female: {
+            id: "female",
+            label: "女生视角",
+            startLabel: "女生视角开局",
+            summary: "盯着他是不是在拿安全感和情绪压你松口。"
+        }
     },
     CHAT_TYPES: [
         {

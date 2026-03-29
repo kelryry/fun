@@ -12,6 +12,7 @@
         uiState: null,
         busy: false,
         workerReady: false,
+        currentMode: "male",
         nextButtonMode: "close",
         casebook: loadCasebook(),
         tutorialStage: loadTutorialStage()
@@ -32,6 +33,7 @@
         panicWarning: document.getElementById("panic-warning"),
         turnCount: document.getElementById("turn-count"),
         testkitCount: document.getElementById("item-testkit"),
+        modeChip: document.getElementById("mode-chip"),
         avatarEmoji: document.getElementById("avatar-emoji"),
         partnerStatus: document.getElementById("partner-status"),
         sceneLabel: document.getElementById("scene-label"),
@@ -55,14 +57,15 @@
         restartButton: document.getElementById("restart-btn"),
         buildChip: document.getElementById("build-chip"),
         runtimeNote: document.getElementById("runtime-note"),
-        startButton: document.getElementById("start-game-btn"),
+        startButtons: Array.from(document.querySelectorAll("[data-mode]")),
         helpOpenButton: document.getElementById("open-help-btn"),
         helpCloseButtons: document.querySelectorAll("[data-close-help]"),
         casebookOpenButtons: [
-            document.getElementById("open-casebook-btn"),
+            document.getElementById("open-casebook-help-btn"),
             document.getElementById("open-casebook-feedback-btn")
         ].filter(Boolean),
         casebookCloseButtons: document.querySelectorAll("[data-close-casebook]"),
+        casebookFeedbackButton: document.getElementById("open-casebook-feedback-btn"),
         hospitalButton: document.getElementById("go-hospital-btn"),
         testkitButton: document.getElementById("use-testkit-btn"),
         actionButtons: Array.from(document.querySelectorAll("[data-action]")),
@@ -139,11 +142,21 @@
         window.localStorage.setItem(data.STORAGE_KEYS.tutorialStage, String(value));
     }
 
+    function getModeMeta(mode) {
+        return data.MODES[mode] || data.MODES.male;
+    }
+
+    function updateModeChip(mode) {
+        state.currentMode = mode;
+        setText(dom.modeChip, getModeMeta(mode).label);
+    }
+
     function updateBuildStatus(mode, detail, ready = false) {
         setText(dom.buildChip, mode);
         setText(dom.runtimeNote, detail);
-        dom.startButton.disabled = !ready;
-        dom.startButton.textContent = ready ? "开始月抛" : "Edge 异常，暂时不能开局";
+        dom.startButtons.forEach((button) => {
+            button.disabled = !ready;
+        });
         state.workerReady = ready;
     }
 
@@ -152,7 +165,7 @@
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(), 1800);
 
-        updateBuildStatus("检查 Edge", "正在确认 Worker 是否在线……", false);
+        updateBuildStatus("服务器检查中", "正在确认服务器有没有接住这一局……", false);
 
         try {
             const response = await fetch(`${apiBase}/bootstrap`, {
@@ -167,16 +180,18 @@
             const payload = await response.json();
             state.runtime = payload;
             updateBuildStatus(
-                "Edge 已连接",
-                `Worker 权威判定已启用 · ${payload.app.version}`,
+                "服务器在线",
+                payload.app.aiEnabled
+                    ? "双视角已上线，聊天和终局复盘会更像真人说话。"
+                    : "双视角已上线，聊天和终局复盘先走稳定模板。",
                 true
             );
         } catch (error) {
             console.warn("Bootstrap failed.", error);
             state.runtime = null;
             updateBuildStatus(
-                "Edge 离线",
-                "这版玩法已经迁到 Worker；接口不可用时不会允许开局。",
+                "服务器离线",
+                "服务器没接上，这一版暂时不能开局。",
                 false
             );
         } finally {
@@ -226,7 +241,9 @@
     }
 
     function bindEvents() {
-        dom.startButton.addEventListener("click", startGame);
+        dom.startButtons.forEach((button) => {
+            button.addEventListener("click", () => startGame(button.dataset.mode || "male"));
+        });
         dom.helpOpenButton.addEventListener("click", () => toggleHelp(true));
         dom.helpModal.addEventListener("click", (event) => {
             if (event.target === dom.helpModal) {
@@ -307,7 +324,7 @@
         setHidden(dom.historyContainer, true);
         setHidden(dom.nextButton, false);
         setHidden(dom.restartButton, true);
-        setHidden(document.getElementById("open-casebook-feedback-btn"), true);
+        setHidden(dom.casebookFeedbackButton, true);
         dom.nextButton.textContent = "继续";
         state.nextButtonMode = "close";
         if (dom.historyContainer) {
@@ -504,16 +521,18 @@
         }
 
         renderUnlocks(addedUnlocks);
-        renderHistoryList(uiState.history || []);
-
-        if ((uiState.history || []).length > 0) {
+        if (uiState.gameOver) {
+            renderHistoryList(uiState.history || []);
             dom.historyContainer.open = true;
+        } else {
+            dom.historyList.innerHTML = "";
+            setHidden(dom.historyContainer, true);
         }
 
         if (event.closeMode === "restart") {
             setHidden(dom.nextButton, true);
             setHidden(dom.restartButton, false);
-            setHidden(document.getElementById("open-casebook-feedback-btn"), false);
+            setHidden(dom.casebookFeedbackButton, false);
         } else {
             setText(dom.nextButton, event.closeLabel || "继续");
             state.nextButtonMode = event.closeMode || "close";
@@ -618,6 +637,7 @@
 
     function renderUiState(uiState) {
         state.uiState = uiState;
+        updateModeChip(uiState.mode || "male");
         setWidth(dom.frustrationBar, `${uiState.stats.frustration}%`);
         setText(dom.frustrationValue, `${uiState.stats.frustration}%`);
         setWidth(dom.anxietyBar, `${uiState.stats.anxiety}%`);
@@ -673,7 +693,7 @@
         }
     }
 
-    async function startGame() {
+    async function startGame(mode = "male") {
         if (!state.workerReady) {
             return;
         }
@@ -681,13 +701,14 @@
         await withBusy(async () => {
             const payload = await apiPost("/game/start", {
                 tutorialStage: state.tutorialStage,
-                mode: data.MODE
+                mode
             });
             const addedUnlocks = mergeCasebookUnlocks(payload.casebookUnlocks);
 
             state.sessionToken = payload.sessionToken;
             saveTutorialStage(payload.nextTutorialStage);
             renderUiState(payload.uiState);
+            updateModeChip(mode);
             setHidden(dom.introModal, true);
             setHidden(dom.gameContainer, false);
             setHidden(dom.helpModal, true);
@@ -747,21 +768,22 @@
         setHidden(dom.gameContainer, true);
         setHidden(dom.chatPanel, true);
         setHidden(dom.introModal, false);
+        updateModeChip(state.currentMode);
         renderCasebook();
     }
 
     function showFatalEdgeError(error) {
         console.error(error);
-        updateBuildStatus("Edge 异常", "Worker 中断，当前版本无法继续。请稍后重试。", false);
+        updateBuildStatus("服务器异常", "服务器刚才断了一下，这局没法继续。", false);
         resetFeedbackState();
         showEvent(
             {
-                title: "Edge 中断",
+                title: "服务器中断",
                 icon: "⚠️",
                 tone: "danger",
                 lines: [
-                    { tone: "danger", text: "Worker 没接住这次请求，当前进度无法继续。" },
-                    { tone: "muted", text: "这版不再保留本地旧逻辑回退。返回首页后可以再试一次。" }
+                    { tone: "danger", text: "这次请求没被服务器接住，当前进度断掉了。" },
+                    { tone: "muted", text: "返回首页后可以再开一局。" }
                 ],
                 closeMode: "restart",
                 closeLabel: "返回首页"
@@ -776,5 +798,6 @@
 
     bindEvents();
     renderCasebook();
+    updateModeChip(state.currentMode);
     await loadRuntimeConfig();
 })();

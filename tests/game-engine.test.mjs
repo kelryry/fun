@@ -31,6 +31,15 @@ test("same seed and same choices stay deterministic", async () => {
     assert.deepEqual(stepA2.event, stepB2.event);
 });
 
+test("female mode can start and stays deterministic too", () => {
+    const runA = startRunPayload({ tutorialStage: 3, seed: 9898, mode: "female" });
+    const runB = startRunPayload({ tutorialStage: 3, seed: 9898, mode: "female" });
+
+    assert.equal(runA.uiState.mode, "female");
+    assert.deepEqual(runA.uiState, runB.uiState);
+    assert.match(runA.uiState.partner.sceneLabel, /他家|酒店|酒吧|街边|车里/);
+});
+
 test("session token rejects tampering", async () => {
     const run = startRunPayload({ tutorialStage: 3, seed: 7, mode: "male" }).run;
     const token = await issueSessionToken(run, env);
@@ -99,4 +108,17 @@ test("api start and invalid session return expected status codes", async () => {
         env
     );
     assert.equal(invalidResponse.status, 400);
+});
+
+test("bootstrap advertises supported modes and AI fallback state", async () => {
+    const response = await handleApiRequest(
+        new Request("https://example.com/api/bootstrap", {
+            method: "GET"
+        }),
+        env
+    );
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.deepEqual(payload.features.modes, ["male", "female"]);
+    assert.equal(payload.features.aiPolish, false);
 });
