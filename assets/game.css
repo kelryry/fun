@@ -76,7 +76,7 @@ textarea {
     /* 低功耗：去除了 backdrop-filter: blur()，改用不透明的纯色背景 */
     background: #18181b;
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .battle-topbar__main,
@@ -88,7 +88,7 @@ textarea {
 }
 
 .battle-topbar__main {
-    gap: 8px;
+    gap: 6px;
 }
 
 .mode-chip,
@@ -100,7 +100,7 @@ textarea {
 
 .mode-chip {
     padding: 6px 12px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: #fca5a5;
     background: rgba(244, 63, 94, 0.1);
@@ -133,7 +133,7 @@ textarea {
 
 .turn-chip__label {
     display: block;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     color: var(--muted);
     line-height: 1;
 }
@@ -141,7 +141,7 @@ textarea {
 .turn-chip__value {
     display: block;
     margin-top: 4px;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 800;
     line-height: 1;
 }
@@ -149,7 +149,7 @@ textarea {
 .meter-strip {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
 }
 
 .compact-meter {
@@ -160,9 +160,9 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 6px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
 }
 
@@ -205,7 +205,7 @@ textarea {
     border: 1px solid rgba(167, 139, 250, 0.25);
     background: rgba(139, 92, 246, 0.1);
     color: #ddd6fe;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     /* 低功耗：移除无限循环的 pulse 动画 */
 }
 
@@ -219,10 +219,10 @@ textarea {
 .partner-stage {
     min-height: 0;
     overflow: auto;
-    padding: 12px;
+    padding: 8px;
     display: grid;
     align-content: start;
-    gap: 8px;
+    gap: 6px;
 }
 
 .partner-hero,
@@ -242,17 +242,17 @@ textarea {
 }
 
 .partner-hero {
-    padding: 12px;
+    padding: 8px;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px;
+    gap: 6px;
     align-items: start;
 }
 
 .avatar-shell {
     position: relative;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     border-radius: var(--radius-sm);
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--line);
@@ -262,7 +262,7 @@ textarea {
 }
 
 .avatar-emoji {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
 }
 
 .partner-status {
@@ -276,7 +276,7 @@ textarea {
     border: 1px solid rgba(251, 113, 133, 0.3);
     display: grid;
     place-items: center;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .partner-copy {
@@ -286,7 +286,7 @@ textarea {
 .scene-label {
     margin: 0;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -294,12 +294,12 @@ textarea {
 
 .partner-opener {
     margin: 8px 0 0;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 600;
 }
 
 .clue-panel {
-    padding: 16px;
+    padding: 10px;
 }
 
 .section-head {
@@ -312,7 +312,7 @@ textarea {
 
 .section-title {
     margin: 0;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--muted);
     letter-spacing: 0.05em;
     font-weight: 600;
@@ -327,13 +327,13 @@ textarea {
 .tag {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     min-height: 32px;
     padding: 8px 14px;
     border-radius: 999px;
     border: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.03);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .tag--hidden {
@@ -372,21 +372,21 @@ textarea {
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
-    padding: 16px;
+    padding: 10px;
     background: #18181b;
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .tool-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
 }
 
 .tool-button {
-    min-height: 52px;
-    padding: 12px 16px;
+    min-height: 42px;
+    padding: 8px 10px;
     text-align: left;
     color: inherit;
     cursor: pointer;
@@ -399,18 +399,18 @@ textarea {
 }
 
 .tool-button__label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--muted);
 }
 
 .tool-button__value {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
 }
 
 .tool-button__note {
     color: var(--text);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .tool-button:disabled,
@@ -431,7 +431,7 @@ textarea {
     color: inherit;
     cursor: pointer;
     min-height: 42px;
-    padding: 12px 16px;
+    padding: 8px 10px;
     display: grid;
     align-content: center;
     gap: 4px;
@@ -444,14 +444,14 @@ textarea {
 
 .button-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
 }
 
 .button-note {
     display: block;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .button--chat {
@@ -512,13 +512,13 @@ textarea {
 .chat-panel {
     padding: 14px;
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .chat-panel__hint {
     margin: 0;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .chat-panel__grid,
@@ -533,7 +533,7 @@ textarea {
 }
 
 .chat-option {
-    min-height: 56px;
+    min-height: 46px;
     padding: 12px 10px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
@@ -550,7 +550,7 @@ textarea {
 }
 
 .chat-option strong {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
 }
 
@@ -593,7 +593,7 @@ textarea {
 .modal-panel {
     width: min(100%, 720px);
     max-height: min(92dvh, 860px);
-    padding: 16px;
+    padding: 10px;
     display: grid;
     gap: 18px;
 }
@@ -613,7 +613,7 @@ textarea {
 .intro-head,
 .feedback-head__copy {
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .modal-kicker,
@@ -626,7 +626,7 @@ textarea {
 
 .modal-kicker {
     color: #fca5a5;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -648,7 +648,7 @@ textarea {
     padding: 6px 12px;
     background: rgba(255, 255, 255, 0.05);
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     border-radius: 999px;
 }
 
@@ -661,7 +661,7 @@ textarea {
 .modal-actions,
 .feedback-actions {
     display: grid;
-    gap: 8px;
+    gap: 6px;
     margin-top: 8px;
 }
 
@@ -673,7 +673,7 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
 }
 
 .icon-button {
@@ -699,7 +699,7 @@ textarea {
     min-height: 0;
     overflow: auto;
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .help-section,
@@ -708,7 +708,7 @@ textarea {
 .disease-card,
 .unlock-card,
 .casebook-section {
-    padding: 16px;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
@@ -718,14 +718,14 @@ textarea {
 .casebook-section__title,
 .summary-stats__title {
     margin: 0 0 10px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--muted);
     font-weight: 700;
 }
 
 .casebook-sections {
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .casebook-list {
@@ -742,19 +742,19 @@ textarea {
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(0, 0, 0, 0.2);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .casebook-empty {
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-style: italic;
 }
 
 .feedback-head {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px;
+    gap: 6px;
     align-items: start;
 }
 
@@ -778,7 +778,7 @@ textarea {
 
 .feedback-line {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
 }
 
 .feedback-line--danger,
@@ -801,11 +801,11 @@ textarea {
 }
 
 .critical-copy {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .unlock-card__title {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--muted);
     font-weight: 700;
 }
@@ -821,7 +821,7 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     padding: 10px 12px;
     cursor: pointer;
     list-style: none;
@@ -844,7 +844,7 @@ textarea {
 
 .history-toggle__meta {
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .history-list {
@@ -852,13 +852,13 @@ textarea {
     overflow: auto;
     padding: 12px 0 0;
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .history-entry {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px;
+    gap: 6px;
     padding: 14px;
     border-radius: var(--radius-sm);
     background: var(--panel-strong);
@@ -880,24 +880,24 @@ textarea {
     position: absolute;
     right: -4px;
     top: -4px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .history-copy {
     min-width: 0;
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .history-scene {
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .history-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .history-tag {
@@ -906,12 +906,12 @@ textarea {
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--line);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .history-subline {
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .history-safe {
@@ -928,7 +928,7 @@ textarea {
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--line);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -947,7 +947,7 @@ textarea {
 
 .summary-stats {
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .summary-stats__grid {
@@ -966,7 +966,7 @@ textarea {
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--line);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .summary-stats__row--danger {
@@ -999,17 +999,17 @@ textarea {
     }
 
     .battle-topbar {
-        padding: 12px 16px;
+        padding: 8px 10px;
     }
 
     .partner-stage {
-        padding: 16px;
-        gap: 8px;
+        padding: 10px;
+        gap: 6px;
     }
 
     .partner-hero {
         grid-template-columns: 56px minmax(0, 1fr);
-        padding: 16px;
+        padding: 10px;
     }
 
     .avatar-shell {
@@ -1018,7 +1018,7 @@ textarea {
     }
 
     .partner-opener {
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
 
     .action-dock {
@@ -1032,7 +1032,7 @@ textarea {
     }
 
     .button-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .button-note,
@@ -1041,12 +1041,12 @@ textarea {
     }
 
     .chat-option {
-        min-height: 52px;
+        min-height: 42px;
         padding: 10px 8px;
     }
 
     .chat-option strong {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 
     .chat-option span {
@@ -1074,13 +1074,13 @@ textarea {
     }
 
     .partner-stage {
-        padding: 16px;
+        padding: 10px;
     }
 
     .action-dock {
         border-top: 0;
         border-left: 1px solid var(--line);
-        padding: 16px;
+        padding: 10px;
         align-content: start;
     }
 

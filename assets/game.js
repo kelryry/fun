@@ -825,6 +825,8 @@
     }
 
     function renderUiState(uiState) {
+        const refuseOptions = ["换一个", "要不...算了吧", "还是撤吧", "这局算了", "没感觉，溜了"];
+        setText(dom.actionTextNodes.refuse.title, refuseOptions[Math.floor(Math.random() * refuseOptions.length)]);
         const battleCopy = getCopy().shell.battle;
         state.uiState = uiState;
         updateModeChip(uiState.mode || "male");

@@ -2027,7 +2027,7 @@ async function polishChatEvent(event, run, env) {
     if (typeof response?.insight === "string" && response.insight.trim()) {
         const insight = response.insight.trim();
         event.aiInsight = insight;
-        // 覆盖原始回复，只显示 AI 提供的解析
+        // 彻底替换 event.lines，只展示AI心理剖析，移除任何程序生成的对话
         event.lines = [{ tone: "warning", text: "💭 " + insight }];
         if (run.currentPartner && frame.topic) {
             run.currentPartner.discoveredQuestionClues[frame.topic].text = insight;
