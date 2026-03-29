@@ -80,11 +80,11 @@ const ACTION_DEFS = {
         reward: 16,
         anxietyDelta: 14,
         risk: {
-            fluid: 0.18,
-            contact: 0.22,
-            skin: 0.18,
-            fluid_mucous: 0.22,
-            skin_hair: 0.18
+            fluid: 0.35,
+            contact: 0.40,
+            skin: 0.35,
+            fluid_mucous: 0.40,
+            skin_hair: 0.35
         }
     },
     sex_raw: {
@@ -92,11 +92,11 @@ const ACTION_DEFS = {
         reward: 24,
         anxietyDelta: 28,
         risk: {
-            fluid: 0.58,
-            contact: 0.48,
-            skin: 0.36,
-            fluid_mucous: 0.5,
-            skin_hair: 0.32
+            fluid: 0.85,
+            contact: 0.75,
+            skin: 0.65,
+            fluid_mucous: 0.85,
+            skin_hair: 0.60
         }
     },
     use_testkit: {
@@ -1270,7 +1270,7 @@ function attemptInfection(run, partner, actionType) {
     for (const diseaseKey of partner.diseaseIds) {
         const disease = DISEASES[diseaseKey];
         const actionChance = actionDef.risk[disease.riskType] || 0;
-        const partnerModifier = partner.riskTier === "high" ? 1.15 : partner.riskTier === "uncertain" ? 0.85 : 0.45;
+        const partnerModifier = partner.riskTier === "high" ? 2.0 : partner.riskTier === "uncertain" ? 1.2 : 0.6;
         const safetyModifier = clamp(1 - partner.safetyScore / 150, 0.35, 0.95);
         const finalChance = clamp(actionChance * partnerModifier * safetyModifier, 0, 0.95);
 
@@ -2008,9 +2008,10 @@ async function polishChatEvent(event, run, env) {
         {
             type: "object",
             properties: {
-                text: { type: "string" }
+                text: { type: "string" },
+                insight: { type: "string" }
             },
-            required: ["text"],
+            required: ["text", "insight"],
             additionalProperties: false
         },
         [
@@ -2028,6 +2029,14 @@ async function polishChatEvent(event, run, env) {
 
     if (typeof response?.text === "string" && response.text.trim()) {
         event.lines[0].text = response.text.trim();
+    }
+    if (typeof response?.insight === "string" && response.insight.trim()) {
+        const insight = response.insight.trim();
+        event.aiInsight = insight;
+        event.lines.push({ tone: "warning", text: "💭 " + insight });
+        if (run.currentPartner && frame.topic) {
+            run.currentPartner.discoveredQuestionClues[frame.topic].text = insight;
+        }
     }
 }
 
@@ -2160,8 +2169,9 @@ export async function handleApiRequest(request, env = {}) {
                 tutorialStage: body.tutorialStage,
                 mode
             });
-            const sessionToken = await issueSessionToken(payload.run, env);
             const introEvent = await prepareEventForClient(payload.introEvent, payload.run, env);
+            payload.uiState = buildUiState(payload.run);
+            const sessionToken = await issueSessionToken(payload.run, env);
 
             return json(
                 {
@@ -2201,8 +2211,9 @@ export async function handleApiRequest(request, env = {}) {
             const body = await parseJsonBody(request);
             const run = await readSessionToken(body.sessionToken, env);
             const payload = chatPayload(run, body.questionType);
-            const sessionToken = await issueSessionToken(payload.run, env);
             const event = await prepareEventForClient(payload.event, payload.run, env);
+            payload.uiState = buildUiState(payload.run);
+            const sessionToken = await issueSessionToken(payload.run, env);
 
             return json(
                 {

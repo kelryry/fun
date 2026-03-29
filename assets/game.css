@@ -14,8 +14,8 @@
     --warning: #fbbf24;
     --safe: #34d399;
     --accent: #60a5fa;
-    --radius: 20px;
-    --radius-sm: 16px;
+    --radius: 16px;
+    --radius-sm: 12px;
 }
 
 *,
@@ -53,7 +53,7 @@ textarea {
 
 .app-shell {
     min-height: 100dvh;
-    padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    padding: calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -71,7 +71,7 @@ textarea {
 }
 
 .battle-topbar {
-    padding: 16px 20px 14px;
+    padding: 8px 12px 6px;
     border-bottom: 1px solid var(--line);
     /* 低功耗：去除了 backdrop-filter: blur()，改用不透明的纯色背景 */
     background: #18181b;
@@ -88,7 +88,7 @@ textarea {
 }
 
 .battle-topbar__main {
-    gap: 16px;
+    gap: 8px;
 }
 
 .mode-chip,
@@ -141,7 +141,7 @@ textarea {
 .turn-chip__value {
     display: block;
     margin-top: 4px;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 800;
     line-height: 1;
 }
@@ -149,7 +149,7 @@ textarea {
 .meter-strip {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 8px;
 }
 
 .compact-meter {
@@ -219,10 +219,10 @@ textarea {
 .partner-stage {
     min-height: 0;
     overflow: auto;
-    padding: 20px;
+    padding: 12px;
     display: grid;
     align-content: start;
-    gap: 20px;
+    gap: 12px;
 }
 
 .partner-hero,
@@ -242,17 +242,17 @@ textarea {
 }
 
 .partner-hero {
-    padding: 18px;
+    padding: 12px;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 16px;
+    gap: 8px;
     align-items: start;
 }
 
 .avatar-shell {
     position: relative;
-    width: 64px;
-    height: 64px;
+    width: 52px;
+    height: 52px;
     border-radius: var(--radius-sm);
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--line);
@@ -262,7 +262,7 @@ textarea {
 }
 
 .avatar-emoji {
-    font-size: 2rem;
+    font-size: 1.6rem;
 }
 
 .partner-status {
@@ -328,7 +328,7 @@ textarea {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 38px;
+    min-height: 32px;
     padding: 8px 14px;
     border-radius: 999px;
     border: 1px solid var(--line);
@@ -385,7 +385,7 @@ textarea {
 }
 
 .tool-button {
-    min-height: 60px;
+    min-height: 52px;
     padding: 12px 16px;
     text-align: left;
     color: inherit;
@@ -404,7 +404,7 @@ textarea {
 }
 
 .tool-button__value {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
 }
 
@@ -430,7 +430,7 @@ textarea {
     background: var(--panel-strong);
     color: inherit;
     cursor: pointer;
-    min-height: 54px;
+    min-height: 48px;
     padding: 12px 16px;
     display: grid;
     align-content: center;
@@ -444,7 +444,7 @@ textarea {
 
 .button-label {
     display: block;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 700;
 }
 
@@ -533,7 +533,7 @@ textarea {
 }
 
 .chat-option {
-    min-height: 68px;
+    min-height: 56px;
     padding: 12px 10px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
@@ -593,7 +593,7 @@ textarea {
 .modal-panel {
     width: min(100%, 720px);
     max-height: min(92dvh, 860px);
-    padding: 24px;
+    padding: 16px;
     display: grid;
     gap: 18px;
 }
@@ -673,7 +673,7 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 8px;
 }
 
 .icon-button {
@@ -699,7 +699,7 @@ textarea {
     min-height: 0;
     overflow: auto;
     display: grid;
-    gap: 16px;
+    gap: 8px;
 }
 
 .help-section,
@@ -754,7 +754,7 @@ textarea {
 .feedback-head {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 16px;
+    gap: 8px;
     align-items: start;
 }
 
@@ -801,7 +801,7 @@ textarea {
 }
 
 .critical-copy {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 }
 
 .unlock-card__title {
@@ -891,7 +891,7 @@ textarea {
 
 .history-scene {
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 }
 
 .history-tags {
@@ -1004,7 +1004,7 @@ textarea {
 
     .partner-stage {
         padding: 16px;
-        gap: 16px;
+        gap: 8px;
     }
 
     .partner-hero {
@@ -1041,7 +1041,7 @@ textarea {
     }
 
     .chat-option {
-        min-height: 60px;
+        min-height: 52px;
         padding: 10px 8px;
     }
 
@@ -1074,13 +1074,13 @@ textarea {
     }
 
     .partner-stage {
-        padding: 24px;
+        padding: 16px;
     }
 
     .action-dock {
         border-top: 0;
         border-left: 1px solid var(--line);
-        padding: 24px;
+        padding: 16px;
         align-content: start;
     }
 
@@ -1091,4 +1091,8 @@ textarea {
     .feedback-panel {
         width: min(100%, 860px);
     }
+}
+
+.history-modal-panel {
+    width: min(100%, 720px);
 }

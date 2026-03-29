@@ -75,6 +75,9 @@
         diseaseContent: document.getElementById("disease-content"),
         criticalReason: document.getElementById("critical-reason"),
         unlockCard: document.getElementById("unlock-card"),
+        historyModal: document.getElementById("history-modal"),
+        reviewButton: document.getElementById("review-btn"),
+        closeHistoryButtons: document.querySelectorAll("[data-close-history]"),
         historyContainer: document.getElementById("history-container"),
         historyTitle: document.getElementById("history-title"),
         historyToggleMeta: document.getElementById("history-toggle-meta"),
@@ -458,6 +461,18 @@
         });
 
         dom.restartButton.addEventListener("click", returnToIntro);
+
+        dom.reviewButton.addEventListener("click", () => {
+            setHidden(dom.feedbackOverlay, true);
+            setHidden(dom.historyModal, false);
+        });
+
+        dom.closeHistoryButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setHidden(dom.historyModal, true);
+                setHidden(dom.feedbackOverlay, false);
+            });
+        });
     }
 
     function toggleHelp(force) {
@@ -485,14 +500,12 @@
         setHidden(dom.diseaseReport, true);
         setHidden(dom.criticalReason, true);
         setHidden(dom.unlockCard, true);
-        setHidden(dom.historyContainer, true);
+        setHidden(dom.reviewButton, true);
         setHidden(dom.nextButton, false);
         setHidden(dom.restartButton, true);
         setHidden(dom.casebookOpenButtons.find((button) => button.id === "open-casebook-feedback-btn"), true);
         setText(dom.nextButton, getCopy().shell.feedback.next);
-        if (dom.historyContainer) {
-            dom.historyContainer.open = true;
-        }
+        
     }
 
     function renderCasebook() {
@@ -651,7 +664,7 @@
             dom.historyList.appendChild(entry);
         });
 
-        setHidden(dom.historyContainer, history.length === 0);
+        // History is now in a separate modal
     }
 
     function escapeHtml(value) {
@@ -685,10 +698,10 @@
         renderUnlocks(addedUnlocks);
         if (uiState.gameOver) {
             renderHistoryList(uiState.history || []);
-            dom.historyContainer.open = true;
+            setHidden(dom.reviewButton, false);
         } else {
             dom.historyList.innerHTML = "";
-            setHidden(dom.historyContainer, true);
+            setHidden(dom.reviewButton, true);
         }
 
         if (event.closeMode === "restart") {

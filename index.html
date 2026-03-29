@@ -217,17 +217,12 @@
                 </div>
                 <div id="unlock-card" class="unlock-card" hidden></div>
 
-                <details id="history-container" class="history-panel" hidden open>
-                    <summary class="history-toggle">
-                        <span id="history-title" class="history-title"></span>
-                        <span id="history-toggle-meta" class="history-toggle__meta"></span>
-                    </summary>
-                    <div id="history-list" class="history-list"></div>
-                </details>
+                
             </div>
 
             <div class="feedback-actions">
                 <button id="next-btn" class="button button--primary" type="button"></button>
+                <button id="review-btn" class="button button--secondary" type="button" hidden>查看复盘</button>
                 <button id="restart-btn" class="button button--secondary" type="button" hidden></button>
                 <button id="open-casebook-feedback-btn" class="button button--secondary" type="button" data-open-casebook hidden></button>
             </div>
@@ -236,5 +231,16 @@
 
     <script defer src="/assets/game-data.js?v=20260329a"></script>
     <script defer src="/assets/game.js?v=20260329a"></script>
+    <section id="history-modal" class="modal" hidden>
+        <div class="modal-panel history-modal-panel">
+            <div class="modal-bar">
+                <h2 id="history-title" class="modal-section-title">本轮复盘</h2>
+                <button class="icon-button" type="button" data-close-history>&times;</button>
+            </div>
+            <div class="modal-scroll custom-scroll">
+                <div id="history-list" class="history-list"></div>
+            </div>
+        </div>
+    </section>
 </body>
 </html>
